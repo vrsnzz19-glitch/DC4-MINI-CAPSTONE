@@ -69,8 +69,9 @@ resource ownership. Hiding a page or button in React is not authorization.
 | `rig_presets` | `id`, `user_id`, optional `pedalboard_id`, `name`, optional description/configuration, `status`; belongs to a user and may refer to a board. |
 
 Use foreign keys for relationships and appropriate uniqueness constraints for
-category names and pedalboard/pedal associations. The exact optional catalog
-and configuration fields can be finalized while designing migrations.
+category names and pedalboard/pedal associations. The detailed proposed field
+types, nullability, indexes, and delete rules are defined in
+[ERD.md](ERD.md).
 
 ## Authorization principles
 

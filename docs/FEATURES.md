@@ -76,5 +76,5 @@ API, not just by hiding frontend links.
 ## Delivery boundaries
 
 The feature list is the target application scope, not a claim that these
-features already exist. Day 1 prepares planning documents and confirms the
-existing directory structure only.
+features already exist. Days 1 and 2 prepare project planning, database design,
+and wireframes; they do not implement application features or migrations.
