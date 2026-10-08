@@ -53,6 +53,18 @@ In order to ensure that the Laravel community is welcoming to all, please review
 
 If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
 
+## Catalog API
+
+The pedal and category catalog can be browsed without authentication:
+
+- `GET /api/pedals` returns a paginated pedal collection with its category. Optional query parameters are `search` (pedal name, brand, or model), `category` (category ID or exact category name), `type`, `status`, and `page`.
+- `GET /api/pedals/{id}` returns one pedal and its category.
+- `GET /api/categories` and `GET /api/categories/{id}` return pedal categories.
+
+Creating, updating, and deleting pedals or categories requires a bearer token for a user with the `admin` role. The endpoints are `POST /api/pedals`, `PUT /api/pedals/{id}`, `DELETE /api/pedals/{id}`, `POST /api/categories`, `PUT /api/categories/{id}`, and `DELETE /api/categories/{id}`. Categories that still contain pedals cannot be deleted.
+
+Run `php artisan db:seed` to load the repeatable ToneVault sample catalog and development accounts.
+
 ## License
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).

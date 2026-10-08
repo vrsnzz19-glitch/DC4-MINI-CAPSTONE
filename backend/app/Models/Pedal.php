@@ -34,6 +34,16 @@ class Pedal extends Model
     }
 
     /**
+     * Get the category for this pedal.
+     *
+     * @return BelongsTo<PedalCategory, $this>
+     */
+    public function category(): BelongsTo
+    {
+        return $this->pedalCategory();
+    }
+
+    /**
      * Get the pedalboards containing this pedal.
      *
      * @return BelongsToMany<Pedalboard, $this>

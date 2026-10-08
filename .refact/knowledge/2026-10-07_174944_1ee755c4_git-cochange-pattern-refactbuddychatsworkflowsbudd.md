@@ -6,7 +6,7 @@ tags:
 - git
 - pattern
 created: 2026-10-07
-updated: 2026-10-07
+updated: 2026-10-08
 filenames:
 - .refact/buddy/chats/workflows/buddy_idle_suggester.json
 - .refact/buddy/runtime_queue.jsonl
@@ -15,7 +15,7 @@ kind: pattern
 status: proposed
 superseded_by: null
 deprecated_at: null
-review_after: 2026-10-07
+review_after: 2026-10-08
 source_chat_id: null
 created_at: 2026-10-07T09:49:44.784032100+00:00
 summary: null

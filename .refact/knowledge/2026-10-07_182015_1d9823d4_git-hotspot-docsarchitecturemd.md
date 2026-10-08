@@ -6,7 +6,7 @@ tags:
 - git
 - hotspot
 created: 2026-10-07
-updated: 2026-10-07
+updated: 2026-10-08
 filenames:
 - docs/ARCHITECTURE.md
 links: []
@@ -14,7 +14,7 @@ kind: code
 status: proposed
 superseded_by: null
 deprecated_at: null
-review_after: 2026-10-07
+review_after: 2026-10-08
 source_chat_id: null
 created_at: 2026-10-07T10:20:15.138379100+00:00
 summary: null
