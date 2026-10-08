@@ -1,0 +1,413 @@
+{
+  "info": {
+    "_postman_id": "ad70de7a-e30b-4b41-9ee7-6da10891b093",
+    "name": "ToneVault API",
+    "description": "Authentication, catalog, pedalboard, relationship, and rig preset workflows.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8000"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "categoryId",
+      "value": "1"
+    },
+    {
+      "key": "pedalId",
+      "value": "1"
+    },
+    {
+      "key": "pedalboardId",
+      "value": "1"
+    },
+    {
+      "key": "rigPresetId",
+      "value": "1"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"ToneVault User\",\"email\":\"guitarist@example.test\",\"password\":\"SecureToneVault123!\",\"password_confirmation\":\"SecureToneVault123!\"}"
+            },
+            "url": "{{baseUrl}}/api/register"
+          }
+        },
+        {
+          "name": "Login as Admin (saves token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.token) pm.collectionVariables.set('token', body.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"admin@tonevault.test\",\"password\":\"ToneVaultAdmin!2026\"}"
+            },
+            "url": "{{baseUrl}}/api/login"
+          }
+        },
+        {
+          "name": "Current user",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/user"
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/logout"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Pedals",
+      "item": [
+        {
+          "name": "List pedals (search and filters)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/pedals?search=BOSS&category=Overdrive&type=Overdrive&status=active&page=1"
+          }
+        },
+        {
+          "name": "Create pedal (admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"pedal_category_id\":{{categoryId}},\"name\":\"Blues Driver BD-2\",\"brand\":\"BOSS\",\"model\":\"BD-2\",\"type\":\"Overdrive\",\"price\":119.99,\"status\":\"active\"}"
+            },
+            "url": "{{baseUrl}}/api/pedals"
+          }
+        },
+        {
+          "name": "Get pedal",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/pedals/{{pedalId}}"
+          }
+        },
+        {
+          "name": "Update pedal (admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"status\":\"inactive\"}"
+            },
+            "url": "{{baseUrl}}/api/pedals/{{pedalId}}"
+          }
+        },
+        {
+          "name": "Delete pedal (admin)",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/pedals/{{pedalId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Categories",
+      "item": [
+        {
+          "name": "List categories",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/categories"
+          }
+        },
+        {
+          "name": "Create category (admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"Ambient\",\"description\":\"Spatial effects.\"}"
+            },
+            "url": "{{baseUrl}}/api/categories"
+          }
+        },
+        {
+          "name": "Get category",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/categories/{{categoryId}}"
+          }
+        },
+        {
+          "name": "Update category (admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"description\":\"Ambient and spacious effects.\"}"
+            },
+            "url": "{{baseUrl}}/api/categories/{{categoryId}}"
+          }
+        },
+        {
+          "name": "Delete empty category (admin)",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/categories/{{categoryId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Pedalboards",
+      "item": [
+        {
+          "name": "List my pedalboards",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/pedalboards"
+          }
+        },
+        {
+          "name": "Create pedalboard",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"Weekend Board\",\"description\":\"A compact live setup.\"}"
+            },
+            "url": "{{baseUrl}}/api/pedalboards"
+          }
+        },
+        {
+          "name": "Get pedalboard",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/pedalboards/{{pedalboardId}}"
+          }
+        },
+        {
+          "name": "Update pedalboard",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"Updated Weekend Board\"}"
+            },
+            "url": "{{baseUrl}}/api/pedalboards/{{pedalboardId}}"
+          }
+        },
+        {
+          "name": "Add pedal to board",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"pedal_id\":{{pedalId}},\"position\":1,\"settings\":{\"level\":8,\"tone\":5},\"notes\":\"Lead boost.\"}"
+            },
+            "url": "{{baseUrl}}/api/pedalboards/{{pedalboardId}}/pedals"
+          }
+        },
+        {
+          "name": "Update pedal position/settings/notes",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"position\":2,\"settings\":{\"mix\":0.4},\"notes\":\"Move after drive.\"}"
+            },
+            "url": "{{baseUrl}}/api/pedalboards/{{pedalboardId}}/pedals/{{pedalId}}"
+          }
+        },
+        {
+          "name": "Remove pedal from board",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/pedalboards/{{pedalboardId}}/pedals/{{pedalId}}"
+          }
+        },
+        {
+          "name": "Delete pedalboard",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/pedalboards/{{pedalboardId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Rig presets",
+      "item": [
+        {
+          "name": "List my presets",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/rig-presets"
+          }
+        },
+        {
+          "name": "Create draft preset",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"Studio Clean\",\"pedalboard_id\":{{pedalboardId}},\"description\":\"Wide clean tone.\",\"amp_settings\":{\"gain\":3,\"bass\":5,\"middle\":6,\"treble\":5},\"guitar\":\"Fender Stratocaster\",\"tuning\":\"E Standard\"}"
+            },
+            "url": "{{baseUrl}}/api/rig-presets"
+          }
+        },
+        {
+          "name": "Get preset",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/rig-presets/{{rigPresetId}}"
+          }
+        },
+        {
+          "name": "Update own preset",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"description\":\"Updated clean tone.\"}"
+            },
+            "url": "{{baseUrl}}/api/rig-presets/{{rigPresetId}}"
+          }
+        },
+        {
+          "name": "Submit own preset",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/rig-presets/{{rigPresetId}}/submit"
+          }
+        },
+        {
+          "name": "Approve another user's preset (admin)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/rig-presets/{{rigPresetId}}/approve"
+          }
+        },
+        {
+          "name": "Archive preset (admin)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/rig-presets/{{rigPresetId}}/archive"
+          }
+        },
+        {
+          "name": "Delete own draft/submitted preset",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/rig-presets/{{rigPresetId}}"
+          }
+        }
+      ]
+    }
+  ]
+}

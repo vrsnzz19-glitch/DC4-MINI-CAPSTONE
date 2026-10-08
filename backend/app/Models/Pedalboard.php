@@ -29,6 +29,16 @@ class Pedalboard extends Model
     }
 
     /**
+     * Get the user who owns this pedalboard.
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function owner(): BelongsTo
+    {
+        return $this->user();
+    }
+
+    /**
      * Get the pedals on this board in signal-chain order.
      *
      * @return BelongsToMany<Pedal, $this>
@@ -36,6 +46,7 @@ class Pedalboard extends Model
     public function pedals(): BelongsToMany
     {
         return $this->belongsToMany(Pedal::class, 'pedalboard_pedals')
+            ->using(PedalboardPedal::class)
             ->withPivot(['id', 'position', 'settings', 'notes'])
             ->withTimestamps()
             ->orderBy('pedalboard_pedals.position');

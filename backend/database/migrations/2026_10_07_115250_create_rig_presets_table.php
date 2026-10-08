@@ -27,7 +27,7 @@ return new class extends Migration
             $table->json('amp_settings')->nullable();
             $table->string('guitar', 100)->nullable();
             $table->string('tuning', 50)->nullable();
-            $table->string('status', 20)->default('draft')->index();
+            $table->string('status', 20)->default('Draft')->index();
             $table->index(['user_id', 'status']);
             $table->index(['status', 'created_at']);
             $table->timestamps();

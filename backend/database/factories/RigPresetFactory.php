@@ -31,7 +31,7 @@ class RigPresetFactory extends Factory
             ],
             'guitar' => 'Fender Stratocaster',
             'tuning' => 'E Standard',
-            'status' => 'draft',
+            'status' => 'Draft',
         ];
     }
 }

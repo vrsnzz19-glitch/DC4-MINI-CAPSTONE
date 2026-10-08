@@ -17,6 +17,7 @@ class RigPreset extends Model
         'amp_settings',
         'guitar',
         'tuning',
+        'status',
     ];
 
     /**

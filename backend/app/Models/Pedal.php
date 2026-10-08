@@ -51,6 +51,7 @@ class Pedal extends Model
     public function pedalboards(): BelongsToMany
     {
         return $this->belongsToMany(Pedalboard::class, 'pedalboard_pedals')
+            ->using(PedalboardPedal::class)
             ->withPivot(['id', 'position', 'settings', 'notes'])
             ->withTimestamps();
     }
