@@ -11,6 +11,7 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
 Route::get('/pedals', [PedalController::class, 'index']);
+Route::get('/pedal-filters', [PedalController::class, 'filters']);
 Route::get('/pedals/{pedal}', [PedalController::class, 'show']);
 Route::get('/categories', [PedalCategoryController::class, 'index']);
 Route::get('/categories/{category}', [PedalCategoryController::class, 'show']);

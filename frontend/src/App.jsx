@@ -1,47 +1,24 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { BrowserRouter, Link, NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { NoticeProvider } from './context/NoticeContext'
 import AuthProvider from './context/AuthContext'
 import useAuth from './hooks/useAuth'
 import useNotice from './hooks/useNotice'
+import apiClient from './services/apiClient'
 import UserLayout from './layouts/UserLayout'
 import AdminLayout from './layouts/AdminLayout'
 import { AdminRoute, ProtectedRoute } from './components/ProtectedRoute'
+import { PedalDetailPage, PedalLibraryPage } from './pages/PedalLibraryPage'
+import { AdminCategoriesPage, AdminPedalsPage } from './pages/AdminCatalogPages'
 import {
-  AdminCategoriesPage,
   AdminDashboardPage,
-  AdminPedalsPage,
   AdminRigPresetsPage,
   CreatePedalboardPage,
   LoginPage,
   PedalboardDetailsPage,
-  PedalDetailsPage,
   RegisterPage,
 } from './pages/StudioPages'
 import './App.css'
-
-const pedals = [
-  { id: 1, name: 'DS-1 Distortion', brand: 'BOSS', category: 'Distortion', type: 'Clipping', status: 'Available', color: 'orange', initials: 'DS' },
-  { id: 2, name: 'Tube Screamer', brand: 'Ibanez', category: 'Overdrive', type: 'Overdrive', status: 'Available', color: 'green', initials: 'TS' },
-  { id: 3, name: 'Phase 90', brand: 'MXR', category: 'Modulation', type: 'Phaser', status: 'Available', color: 'red', initials: '90' },
-  { id: 4, name: 'DD-7 Digital Delay', brand: 'BOSS', category: 'Delay', type: 'Digital Delay', status: 'Available', color: 'blue', initials: 'DD' },
-  { id: 5, name: 'Holy Grail', brand: 'Electro-Harmonix', category: 'Reverb', type: 'Reverb', status: 'Available', color: 'silver', initials: 'HG' },
-  { id: 6, name: 'CH-1 Super Chorus', brand: 'BOSS', category: 'Modulation', type: 'Chorus', status: 'Available', color: 'blue', initials: 'CH' },
-  { id: 7, name: 'Blues Driver BD-2', brand: 'BOSS', category: 'Overdrive', type: 'Blues Driver', status: 'Available', color: 'blue', initials: 'BD' },
-  { id: 8, name: 'Big Muff Pi', brand: 'Electro-Harmonix', category: 'Fuzz', type: 'Fuzz', status: 'Available', color: 'black', initials: 'BM' },
-  { id: 9, name: 'Carbon Copy', brand: 'MXR', category: 'Delay', type: 'Analog Delay', status: 'Available', color: 'green', initials: 'CC' },
-  { id: 10, name: 'Cry Baby Wah', brand: 'Dunlop', category: 'Filter', type: 'Wah', status: 'Available', color: 'black', initials: 'CB' },
-  { id: 11, name: 'RV-6 Reverb', brand: 'BOSS', category: 'Reverb', type: 'Reverb', status: 'Available', color: 'blue', initials: 'RV' },
-  { id: 12, name: 'Dyna Comp', brand: 'MXR', category: 'Dynamics', type: 'Compressor', status: 'Available', color: 'red', initials: 'DC' },
-  { id: 13, name: 'Micro POG', brand: 'Electro-Harmonix', category: 'Pitch', type: 'Octave', status: 'Available', color: 'silver', initials: 'POG' },
-  { id: 14, name: 'Small Clone', brand: 'Electro-Harmonix', category: 'Modulation', type: 'Chorus', status: 'Available', color: 'blue', initials: 'SC' },
-  { id: 15, name: 'Phase 95', brand: 'MXR', category: 'Modulation', type: 'Phaser', status: 'Available', color: 'red', initials: '95' },
-  { id: 16, name: 'Oceans 11', brand: 'Electro-Harmonix', category: 'Reverb', type: 'Reverb', status: 'Available', color: 'blue', initials: 'O11' },
-  { id: 17, name: 'SD-1 Super OverDrive', brand: 'BOSS', category: 'Overdrive', type: 'Overdrive', status: 'Available', color: 'yellow', initials: 'SD' },
-  { id: 18, name: 'RAT 2', brand: 'Pro Co', category: 'Distortion', type: 'Distortion', status: 'Available', color: 'black', initials: 'RAT' },
-  { id: 19, name: 'Flashback 2', brand: 'TC Electronic', category: 'Delay', type: 'Digital Delay', status: 'Available', color: 'silver', initials: 'FB' },
-  { id: 20, name: 'PolyTune 3', brand: 'TC Electronic', category: 'Tuner', type: 'Tuner', status: 'Available', color: 'white', initials: 'PT' },
-]
 
 const initialBoards = [
   { id: 1, name: 'My Rock Setup', owner: 'Alex Morgan', updated: 'Oct 06, 2026', count: 6, style: 'rock' },
@@ -54,15 +31,6 @@ const initialPresets = [
   { id: 2, name: 'Rock Lead', board: 'My Rock Setup', guitar: 'Gibson Les Paul', tuning: 'E Standard', amp: 'Gain 7 · Bass 6 · Mid 7 · Treble 6', status: 'Submitted', color: 'orange' },
   { id: 3, name: 'Ambient Delay', board: 'Ambient Setup', guitar: 'Fender Jazzmaster', tuning: 'D Standard', amp: 'Gain 2 · Bass 4 · Mid 5 · Treble 6', status: 'Draft', color: 'muted' },
   { id: 4, name: 'Blues Drive', board: 'My Rock Setup', guitar: 'Fender Telecaster', tuning: 'E Standard', amp: 'Gain 4 · Bass 5 · Mid 7 · Treble 5', status: 'Archived', color: 'purple' },
-]
-
-const chainStart = [
-  { id: 31, name: 'Chromatic Tuner', brand: 'BOSS', type: 'Tuner', color: 'white', initials: 'TU' },
-  { id: 32, name: 'Dyna Comp', brand: 'MXR', type: 'Compressor', color: 'red', initials: 'DC' },
-  { id: 33, name: 'Tube Screamer', brand: 'Ibanez', type: 'Overdrive', color: 'green', initials: 'TS' },
-  { id: 34, name: 'DS-1 Distortion', brand: 'BOSS', type: 'Distortion', color: 'orange', initials: 'DS' },
-  { id: 35, name: 'Digital Delay', brand: 'BOSS', type: 'Delay', color: 'blue', initials: 'DD' },
-  { id: 36, name: 'Holy Grail', brand: 'Electro-Harmonix', type: 'Reverb', color: 'silver', initials: 'HG' },
 ]
 
 function Icon({ name, size = 18 }) {
@@ -106,35 +74,6 @@ function SectionHeading({ eyebrow, title, description, action }) {
 
 function Card({ children, className = '' }) {
   return <section className={`card ${className}`}>{children}</section>
-}
-
-function PedalCard({ pedal, onView }) {
-  return <Card className="pedal-card">
-    <div className={`pedal-visual pedal-${pedal.color}`}><span className="pedal-brand">{pedal.brand}</span><span className="pedal-face">{pedal.initials}</span><span className="pedal-led" /><span className="pedal-footswitch" /></div>
-    <div className="pedal-card-body">
-      <div className="pedal-title-row"><div><h3>{pedal.name}</h3><p>{pedal.brand}</p></div><StatusBadge tone="green">{pedal.status}</StatusBadge></div>
-      <div className="tag-row"><span className="tag">{pedal.category}</span><span className="tag tag-dim">{pedal.type}</span></div>
-      <Button className="full-button" onClick={() => onView(pedal)}>View pedal <Icon name="arrow" size={15} /></Button>
-    </div>
-  </Card>
-}
-
-function PedalGrid({ items, onView }) {
-  if (!items.length) return <EmptyState title="No pedals found" message="Try a different search or clear your filters." />
-  return <div className="pedal-grid">{items.map((pedal) => <PedalCard key={pedal.id} pedal={pedal} onView={onView} />)}</div>
-}
-
-function SearchBar({ value, onChange }) {
-  return <label className="search-bar"><Icon name="search" /><input value={value} onChange={(event) => onChange(event.target.value)} placeholder="Search pedals, brands..." /><kbd>⌘ K</kbd></label>
-}
-
-function FilterBar({ category, setCategory, type, setType }) {
-  return <div className="filter-bar"><label><span>Category</span><select value={category} onChange={(event) => setCategory(event.target.value)}><option value="">All categories</option>{[...new Set(pedals.map((pedal) => pedal.category))].sort().map((item) => <option key={item}>{item}</option>)}</select></label><label><span>Type</span><select value={type} onChange={(event) => setType(event.target.value)}><option value="">All types</option>{[...new Set(pedals.map((pedal) => pedal.type))].sort().map((item) => <option key={item}>{item}</option>)}</select></label><Button icon="tune" onClick={() => { setCategory(''); setType('') }}>Clear filters</Button></div>
-}
-
-function Pagination({ page, setPage, total }) {
-  const pageCount = Math.max(1, Math.ceil(total / 6))
-  return <div className="pagination"><span>Showing <b>{total === 0 ? 0 : (page - 1) * 6 + 1}–{Math.min(page * 6, total)}</b> of <b>{total}</b> pedals</span><div><Button disabled={page === 1} onClick={() => setPage(page - 1)}>Previous</Button>{Array.from({ length: pageCount }, (_, index) => index + 1).map((number) => <button key={number} className={`page-number ${page === number ? 'selected' : ''}`} onClick={() => setPage(number)}>{number}</button>)}<Button disabled={page === pageCount} onClick={() => setPage(page + 1)}>Next <Icon name="arrow" size={14} /></Button></div></div>
 }
 
 function PedalboardCard({ board, onOpen, onEdit }) {
@@ -216,15 +155,22 @@ function AppFrame() {
   const [modal, setModal] = useState(null)
   const [boards, setBoards] = useState(initialBoards)
   const [presets, setPresets] = useState(initialPresets)
-  const [chain, setChain] = useState(chainStart)
-  const [search, setSearch] = useState('')
-  const [category, setCategory] = useState('')
-  const [type, setType] = useState('')
-  const [page, setPage] = useState(1)
+  const [chain, setChain] = useState([])
+  const [catalogPedals, setCatalogPedals] = useState([])
   const [settings, setSettings] = useState({})
   const location = useLocation()
   const navigate = useNavigate()
   const { notice, flash } = useNotice()
+  useEffect(() => {
+    if (modal?.type !== 'add-pedal') return undefined
+    const controller = new AbortController()
+    apiClient.get('/pedals', { params: { per_page: 100 }, signal: controller.signal })
+      .then((response) => setCatalogPedals(response.data.data))
+      .catch((error) => {
+        if (!controller.signal.aborted) flash(error.response?.data?.message || 'Unable to load pedals for the builder.')
+      })
+    return () => controller.abort()
+  }, [modal, flash])
   const handleLogout = async () => {
     try {
       await logout()
@@ -237,14 +183,6 @@ function AppFrame() {
   const pageName = navItems.find((item) => item.path === location.pathname)?.label
     || ({ '/builder': 'Pedalboard Builder', '/pedalboards/create': 'Create Pedalboard', '/admin/pedals': 'Admin Pedals', '/admin/categories': 'Admin Categories', '/admin/rig-presets': 'Admin Rig Presets' })[location.pathname]
     || (location.pathname.startsWith('/pedals/') ? 'Pedal Details' : location.pathname.startsWith('/pedalboards/') ? 'Pedalboard Details' : 'Dashboard')
-  const filteredPedals = useMemo(() => pedals.filter((pedal) => {
-    const query = search.toLowerCase()
-    return (!query || `${pedal.name} ${pedal.brand} ${pedal.category} ${pedal.type}`.toLowerCase().includes(query))
-      && (!category || pedal.category === category)
-      && (!type || pedal.type === type)
-  }), [search, category, type])
-  const pages = Math.max(1, Math.ceil(filteredPedals.length / 6))
-  const visiblePedals = filteredPedals.slice((Math.min(page, pages) - 1) * 6, Math.min(page, pages) * 6)
   function updateChain(index, direction) {
     const next = [...chain]
     const destination = index + direction
@@ -254,7 +192,7 @@ function AppFrame() {
   }
 
   function addPedal(pedal) {
-    setChain((current) => [...current, { ...pedal, id: Date.now(), initials: pedal.initials || pedal.name.slice(0, 2).toUpperCase() }])
+    setChain((current) => [...current, { ...pedal, id: Date.now() }])
     setModal(null)
   }
 
@@ -264,8 +202,8 @@ function AppFrame() {
     <UserLayout sidebar={<Sidebar mobileOpen={mobileOpen} closeMenu={() => setMobileOpen(false)} onLogout={handleLogout} user={user} />} topbar={<Topbar onMenu={() => setMobileOpen(true)} title={pageName} user={user} />} footer={<footer className="footer"><span>© 2026 ToneVault</span><span>Built for the love of tone <b>✳</b></span><span>Studio workspace</span></footer>}>
       <Routes>
         <Route path="/" element={<Dashboard navigate={navigate} />} />
-        <Route path="/pedals" element={<PedalLibrary search={search} setSearch={(value) => { setSearch(value); setPage(1) }} category={category} setCategory={(value) => { setCategory(value); setPage(1) }} type={type} setType={(value) => { setType(value); setPage(1) }} visiblePedals={visiblePedals} filteredPedals={filteredPedals} page={Math.min(page, pages)} setPage={setPage} onView={(pedal) => navigate(`/pedals/${pedal.id}`)} />} />
-        <Route path="/pedals/:id" element={<PedalDetailsPage pedal={pedals.find((pedal) => pedal.id === Number(location.pathname.split('/').pop()))} onAdd={addPedal} />} />
+        <Route path="/pedals" element={<PedalLibraryPage />} />
+        <Route path="/pedals/:id" element={<PedalDetailPage />} />
         <Route path="/pedalboards" element={<Pedalboards boards={boards} onOpen={(board) => navigate(`/pedalboards/${board.id}`)} onEdit={() => navigate('/builder')} onCreate={() => navigate('/pedalboards/create')} />} />
         <Route path="/pedalboards/create" element={<CreatePedalboardPage onCreate={(name) => {
           const board = { id: Date.now(), name, owner: 'Alex Morgan', updated: 'Just now', count: 0, style: 'clean' }
@@ -277,10 +215,10 @@ function AppFrame() {
         <Route path="/builder" element={<Builder chain={chain} onMove={updateChain} onRemove={(id) => setChain((current) => current.filter((pedal) => pedal.id !== id))} onSettings={(pedal) => setModal({ type: 'settings', value: pedal })} onAdd={() => setModal({ type: 'add-pedal' })} onSave={saveBoard} />} />
         <Route path="/rig-presets" element={<RigPresets presets={presets} onOpen={(preset) => setModal({ type: 'preset', value: preset })} onCreate={() => setModal({ type: 'new-preset' })} />} />
         <Route element={<AdminRoute />}>
-          <Route path="/admin" element={<AdminDashboardPage pedals={pedals} presets={presets} navigate={navigate} onReview={(preset) => setModal({ type: 'preset', value: preset })} />} />
-          <Route path="/admin/overview" element={<AdminLayout><AdminPreview presets={presets} navigate={navigate} onNotice={flash} onReview={(preset) => setModal({ type: 'preset', value: preset })} /></AdminLayout>} />
-          <Route path="/admin/pedals" element={<AdminPedalsPage pedals={pedals} />} />
-          <Route path="/admin/categories" element={<AdminCategoriesPage pedals={pedals} />} />
+          <Route path="/admin" element={<AdminDashboardPage presets={presets} navigate={navigate} onReview={(preset) => setModal({ type: 'preset', value: preset })} />} />
+          <Route path="/admin/overview" element={<AdminLayout><AdminPreview presets={presets} navigate={navigate} onReview={(preset) => setModal({ type: 'preset', value: preset })} /></AdminLayout>} />
+          <Route path="/admin/pedals" element={<AdminPedalsPage />} />
+          <Route path="/admin/categories" element={<AdminCategoriesPage />} />
           <Route path="/admin/rig-presets" element={<AdminRigPresetsPage presets={presets} onReview={(preset) => setModal({ type: 'preset', value: preset })} />} />
         </Route>
         <Route path="*" element={<Dashboard navigate={navigate} />} />
@@ -290,7 +228,7 @@ function AppFrame() {
     {modal && <Modal title={modal.type === 'pedal' ? modal.value.name : modal.type === 'settings' ? `${modal.value.name} settings` : modal.type === 'preset' ? modal.value.name : modal.type === 'add-pedal' ? 'Add a pedal' : modal.type === 'new-board' ? 'Create pedalboard' : modal.type === 'new-preset' ? 'Create rig preset' : 'Category management'} onClose={() => setModal(null)} wide={modal.type === 'add-pedal'}>
       {modal.type === 'pedal' && <div className="detail-modal"><div className={`pedal-visual pedal-${modal.value.color}`}><span className="pedal-brand">{modal.value.brand}</span><span className="pedal-face">{modal.value.initials}</span><span className="pedal-led" /><span className="pedal-footswitch" /></div><div><span className="tag">{modal.value.category}</span><p>{modal.value.type} effect by {modal.value.brand}.</p><Button variant="primary" onClick={() => addPedal(modal.value)}>Add to current board</Button></div></div>}
       {modal.type === 'settings' && <div className="form-stack"><p className="muted">Adjust the local settings for {modal.value.name}.</p>{['Level', 'Tone', 'Mix'].map((key) => <label className="range-setting" key={key}><span>{key}<b>{settings[`${modal.value.id}-${key}`] ?? 50}%</b></span><input type="range" value={settings[`${modal.value.id}-${key}`] ?? 50} onChange={(event) => setSettings((current) => ({ ...current, [`${modal.value.id}-${key}`]: event.target.value }))} /></label>)}<label className="field-label">Notes<textarea rows="3" placeholder="Add a note for this pedal..." /></label><Button variant="primary" onClick={() => { setModal(null); flash('Pedal settings updated in local preview.') }}>Done</Button></div>}
-      {modal.type === 'add-pedal' && <div className="add-pedal-grid">{pedals.filter((pedal) => !chain.some((item) => item.name === pedal.name)).map((pedal) => <button key={pedal.id} className="add-pedal-option" onClick={() => addPedal(pedal)}><span className={`mini-pedal pedal-${pedal.color}`}><span>{pedal.initials}</span></span><span><b>{pedal.name}</b><small>{pedal.brand} · {pedal.type}</small></span><Icon name="plus" size={17} /></button>)}</div>}
+      {modal.type === 'add-pedal' && <div className="add-pedal-grid">{catalogPedals.filter((pedal) => !chain.some((item) => item.id === pedal.id || item.name === pedal.name)).map((pedal) => <button key={pedal.id} className="add-pedal-option" onClick={() => addPedal(pedal)}><span className="mini-pedal pedal-black"><span>{(pedal.model || pedal.name).slice(0, 2).toUpperCase()}</span></span><span><b>{pedal.name}</b><small>{pedal.brand} · {pedal.type}</small></span><Icon name="plus" size={17} /></button>)}</div>}
       {(modal.type === 'new-board' || modal.type === 'new-preset') && <CreatePreviewForm type={modal.type} onCreate={(name, description) => {
         if (modal.type === 'new-board') {
           setBoards((current) => [...current, { id: Date.now(), name, owner: 'Alex Morgan', updated: 'Just now', count: 0, style: 'clean' }])
@@ -308,25 +246,42 @@ function AppFrame() {
 }
 
 function Dashboard({ navigate }) {
+  const [catalogPedals, setCatalogPedals] = useState([])
+  const [pedalCount, setPedalCount] = useState(0)
+  const [isLoadingPedals, setIsLoadingPedals] = useState(true)
+  const [pedalError, setPedalError] = useState('')
+
+  useEffect(() => {
+    const controller = new AbortController()
+    apiClient.get('/pedals', { params: { per_page: 4 }, signal: controller.signal })
+      .then((response) => {
+        setCatalogPedals(response.data.data)
+        setPedalCount(response.data.meta.total)
+      })
+      .catch((error) => {
+        if (!controller.signal.aborted) setPedalError(error.response?.data?.message || 'Unable to load recent pedals.')
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setIsLoadingPedals(false)
+      })
+    return () => controller.abort()
+  }, [])
+
   return <>
     <div className="welcome-banner"><div className="welcome-copy"><span className="eyebrow banner-eyebrow">THURSDAY, OCTOBER 08, 2026</span><h1>Good evening, Alex <span>✳</span></h1><p>Your sound is taking shape. Ready to find your next tone?</p><Button variant="cream" icon="arrow" onClick={() => navigate('/builder')}>Continue building <Icon name="arrow" size={15} /></Button></div><div className="welcome-art"><span className="orbit orbit-one" /><span className="orbit orbit-two" /><div className="hero-pedal"><span>TV</span><i /><small>TONEVAULT</small></div><div className="art-spark spark-one">✳</div><div className="art-spark spark-two">✦</div></div></div>
     <div className="dashboard-section-top"><div><span className="eyebrow">YOUR STUDIO</span><h2>At a glance</h2></div><span className="updated-label"><i /> Updated just now</span></div>
     <div className="stats-grid">
-      <StatCard label="Total pedals" number="20" note="In your library" icon="pedal" trend="+4 this month" tone="orange" />
+      <StatCard label="Total pedals" number={isLoadingPedals ? '—' : pedalCount} note="In your library" icon="pedal" trend="Browse catalog" tone="orange" />
       <StatCard label="My pedalboards" number="3" note="Across your studio" icon="board" trend="View all" tone="purple" />
       <StatCard label="Rig presets" number="5" note="Tone recipes saved" icon="preset" trend="2 approved" tone="green" />
       <Card className="quote-card"><span className="quote-mark">“</span><p>Tone is in the fingers,<br />but the pedals help.</p><span>— every guitarist, eventually</span><div className="quote-wave">〰〰〰〰〰〰〰</div></Card>
     </div>
-    <div className="dashboard-columns"><Card className="recent-card"><div className="card-heading"><div><span className="eyebrow">RECENTLY IN YOUR LIBRARY</span><h2>Popular pedals</h2></div><button className="text-link" onClick={() => navigate('/pedals')}>View library <Icon name="arrow" size={14} /></button></div><div className="mini-library">{pedals.slice(0, 4).map((pedal) => <div className="mini-library-row" key={pedal.id}><div className={`library-icon pedal-${pedal.color}`}>{pedal.initials}</div><div><b>{pedal.name}</b><span>{pedal.brand} · {pedal.category}</span></div><Icon name="chevron" size={16} /></div>)}</div></Card><Card className="quick-card"><span className="eyebrow">MAKE SOME NOISE</span><h2>Quick actions</h2><p>Jump back into your creative flow.</p><button className="quick-action" onClick={() => navigate('/pedals')}><span className="quick-icon"><Icon name="search" /></span><span><b>Browse pedals</b><small>Find your next sound</small></span><Icon name="arrow" size={16} /></button><button className="quick-action" onClick={() => navigate('/builder')}><span className="quick-icon"><Icon name="plus" /></span><span><b>Create pedalboard</b><small>Build a new signal chain</small></span><Icon name="arrow" size={16} /></button><button className="quick-action" onClick={() => navigate('/rig-presets')}><span className="quick-icon"><Icon name="preset" /></span><span><b>View rig presets</b><small>Explore your tone recipes</small></span><Icon name="arrow" size={16} /></button></Card></div>
+    <div className="dashboard-columns"><Card className="recent-card"><div className="card-heading"><div><span className="eyebrow">RECENTLY IN YOUR LIBRARY</span><h2>Popular pedals</h2></div><button className="text-link" onClick={() => navigate('/pedals')}>View library <Icon name="arrow" size={14} /></button></div>{pedalError ? <p className="muted" role="alert">{pedalError}</p> : isLoadingPedals ? <div className="mini-library-loading" role="status">Loading pedals...</div> : catalogPedals.length ? <div className="mini-library">{catalogPedals.map((pedal) => <div className="mini-library-row" key={pedal.id}><div className="library-icon pedal-black">{(pedal.model || pedal.name).slice(0, 2).toUpperCase()}</div><div><b>{pedal.name}</b><span>{pedal.brand} · {pedal.category?.name || pedal.type}</span></div><Icon name="chevron" size={16} /></div>)}</div> : <p className="muted">No pedals in the catalog yet.</p>}</Card><Card className="quick-card"><span className="eyebrow">MAKE SOME NOISE</span><h2>Quick actions</h2><p>Jump back into your creative flow.</p><button className="quick-action" onClick={() => navigate('/pedals')}><span className="quick-icon"><Icon name="search" /></span><span><b>Browse pedals</b><small>Find your next sound</small></span><Icon name="arrow" size={16} /></button><button className="quick-action" onClick={() => navigate('/builder')}><span className="quick-icon"><Icon name="plus" /></span><span><b>Create pedalboard</b><small>Build a new signal chain</small></span><Icon name="arrow" size={16} /></button><button className="quick-action" onClick={() => navigate('/rig-presets')}><span className="quick-icon"><Icon name="preset" /></span><span><b>View rig presets</b><small>Explore your tone recipes</small></span><Icon name="arrow" size={16} /></button></Card></div>
   </>
 }
 
 function StatCard({ label, number, note, icon, trend, tone }) {
   return <Card className="stat-card"><div className={`stat-icon stat-${tone}`}><Icon name={icon} size={20} /></div><div className="stat-content"><span>{label}</span><b>{number}</b><small>{note}</small></div><div className="stat-footer"><span className={`stat-dot ${tone}`} />{trend}</div></Card>
-}
-
-function PedalLibrary({ search, setSearch, category, setCategory, type, setType, visiblePedals, filteredPedals, page, setPage, onView }) {
-  return <><SectionHeading eyebrow="THE COLLECTION" title="Pedal library" description="A universe of tone, one stomp at a time." action={<span className="collection-count"><span /> {pedals.length} pedals in collection</span>} /><Card className="library-tools"><SearchBar value={search} onChange={setSearch} /><FilterBar category={category} setCategory={setCategory} type={type} setType={setType} /></Card><div className="library-results-label"><span>Showing <b>{filteredPedals.length}</b> pedals</span><span className="sort-button">Sorted by: <b>Name A–Z</b> <Icon name="down" size={14} /></span></div><PedalGrid items={visiblePedals} onView={onView} /><Pagination page={page} setPage={setPage} total={filteredPedals.length} /></>
 }
 
 function Pedalboards({ boards, onOpen, onEdit, onCreate }) {
@@ -341,9 +296,34 @@ function RigPresets({ presets, onOpen, onCreate }) {
   return <><SectionHeading eyebrow="TONE RECIPES" title="Rig presets" description="Save the settings behind your signature sound." action={<Button variant="primary" icon="plus" onClick={onCreate}>New preset</Button>} /><div className="preset-summary"><div><span className="eyebrow">YOUR PRESETS</span><b>{presets.length} <small>saved tones</small></b></div><div className="preset-summary-divider" /><div><StatusBadge tone="green">2 Approved</StatusBadge><StatusBadge tone="orange">1 Submitted</StatusBadge><StatusBadge tone="muted">1 Draft</StatusBadge></div></div><div className="preset-grid">{presets.map((preset) => <RigPresetCard key={preset.id} preset={preset} onOpen={onOpen} />)}</div></>
 }
 
-function AdminPreview({ presets, navigate, onReview, onNotice }) {
+function AdminPreview({ presets, navigate, onReview }) {
   const pending = presets.filter((preset) => preset.status === 'Submitted')
-  return <><SectionHeading eyebrow="STUDIO CONTROL" title="Admin overview" description="A quick look at the ToneVault collection." action={<span className="admin-preview-pill"><Icon name="admin" size={15} /> ADMIN PREVIEW</span>} /><div className="admin-stats"><AdminStat label="Total pedals" value="20" icon="pedal" /><AdminStat label="Total categories" value="10" icon="grid" /><AdminStat label="Total pedalboards" value="3" icon="board" /><AdminStat label="Pending rig presets" value={String(pending.length).padStart(2, '0')} icon="preset" /></div><div className="admin-manage-grid"><AdminManageCard number="01" title="Manage pedals" text="Review the pedal catalog and its details." count="20 pedals" onClick={() => navigate('/pedals')} /><AdminManageCard number="02" title="Manage categories" text="Keep your effect families organized." count="10 categories" onClick={() => onNotice('Category management is a frontend-only preview.')} /><AdminManageCard number="03" title="Review rig presets" text="Submitted tone recipes waiting for review." count={`${pending.length} to review`} onClick={() => pending[0] && onReview(pending[0])} /></div><Card className="review-table-card"><div className="card-heading"><div><span className="eyebrow">REQUIRES ATTENTION</span><h2>Preset review queue</h2></div><span className="table-count">{pending.length} awaiting review</span></div><div className="table-wrap"><table><thead><tr><th>PRESET NAME</th><th>OWNER</th><th>PEDALBOARD</th><th>SUBMITTED</th><th>STATUS</th><th /></tr></thead><tbody>{pending.length ? pending.map((preset) => <tr key={preset.id}><td><b>{preset.name}</b></td><td>Alex Morgan</td><td>{preset.board}</td><td>Oct 07, 2026</td><td><StatusBadge tone="orange">Submitted</StatusBadge></td><td><button className="text-link" onClick={() => onReview(preset)}>Review <Icon name="arrow" size={14} /></button></td></tr>) : <tr><td colSpan="6"><EmptyState title="All caught up" message="No presets are waiting for review." /></td></tr>}</tbody></table></div></Card><p className="preview-disclaimer"><Icon name="admin" size={15} /> This admin screen is a visual preview. It does not manage live data.</p></>
+  const [pedalCount, setPedalCount] = useState(0)
+  const [categoryCount, setCategoryCount] = useState(0)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    const controller = new AbortController()
+    Promise.all([
+      apiClient.get('/pedals', { params: { per_page: 1 }, signal: controller.signal }),
+      apiClient.get('/categories', { signal: controller.signal }),
+    ]).then(([pedalsResponse, categoriesResponse]) => {
+      setPedalCount(pedalsResponse.data.meta.total)
+      setCategoryCount(categoriesResponse.data.data.length)
+    }).catch((requestError) => {
+      if (!controller.signal.aborted) setError(requestError.response?.data?.message || 'Unable to load catalog summary.')
+    })
+    return () => controller.abort()
+  }, [])
+
+  return <>
+    <SectionHeading eyebrow="STUDIO CONTROL" title="Admin overview" description="A quick look at the ToneVault collection." action={<span className="admin-preview-pill"><Icon name="admin" size={15} /> ADMIN PREVIEW</span>} />
+    {error && <div className="inline-message error-message" role="alert">{error}</div>}
+    <div className="admin-stats"><AdminStat label="Total pedals" value={pedalCount} icon="pedal" /><AdminStat label="Total categories" value={categoryCount} icon="grid" /><AdminStat label="Total pedalboards" value="3" icon="board" /><AdminStat label="Pending rig presets" value={String(pending.length).padStart(2, '0')} icon="preset" /></div>
+    <div className="admin-manage-grid"><AdminManageCard number="01" title="Manage pedals" text="Review the pedal catalog and its details." count={`${pedalCount} pedals`} onClick={() => navigate('/admin/pedals')} /><AdminManageCard number="02" title="Manage categories" text="Keep your effect families organized." count={`${categoryCount} categories`} onClick={() => navigate('/admin/categories')} /><AdminManageCard number="03" title="Review rig presets" text="Submitted tone recipes waiting for review." count={`${pending.length} to review`} onClick={() => pending[0] && onReview(pending[0])} /></div>
+    <Card className="review-table-card"><div className="card-heading"><div><span className="eyebrow">REQUIRES ATTENTION</span><h2>Preset review queue</h2></div><span className="table-count">{pending.length} awaiting review</span></div><div className="table-wrap"><table><thead><tr><th>PRESET NAME</th><th>OWNER</th><th>PEDALBOARD</th><th>SUBMITTED</th><th>STATUS</th><th /></tr></thead><tbody>{pending.length ? pending.map((preset) => <tr key={preset.id}><td><b>{preset.name}</b></td><td>Alex Morgan</td><td>{preset.board}</td><td>Oct 07, 2026</td><td><StatusBadge tone="orange">Submitted</StatusBadge></td><td><button className="text-link" onClick={() => onReview(preset)}>Review <Icon name="arrow" size={14} /></button></td></tr>) : <tr><td colSpan="6"><EmptyState title="All caught up" message="No presets are waiting for review." /></td></tr>}</tbody></table></div></Card>
+    <p className="preview-disclaimer"><Icon name="admin" size={15} /> Preset review is a visual preview and does not manage live data.</p>
+  </>
 }
 
 function AdminStat({ label, value, icon }) {

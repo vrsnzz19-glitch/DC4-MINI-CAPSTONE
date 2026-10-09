@@ -63,6 +63,19 @@ class PedalCatalogApiTest extends TestCase
             ->assertJsonCount(3, 'data');
     }
 
+    public function test_pedal_filter_options_are_distinct_and_public(): void
+    {
+        Pedal::factory()->count(2)->create(['type' => 'Overdrive', 'status' => 'active']);
+        Pedal::factory()->create(['type' => 'Delay', 'status' => 'inactive']);
+
+        $this->getJson('/api/pedal-filters')
+            ->assertOk()
+            ->assertExactJson([
+                'types' => ['Delay', 'Overdrive'],
+                'statuses' => ['active', 'inactive'],
+            ]);
+    }
+
     public function test_admin_can_create_read_update_and_delete_pedals(): void
     {
         $admin = User::factory()->create();

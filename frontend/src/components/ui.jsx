@@ -13,15 +13,16 @@ export function FormInput({ label, error, id, ...props }) {
   </label>
 }
 
-export function SelectInput({ label, options, id, ...props }) {
+export function SelectInput({ label, options, id, error, ...props }) {
   const inputId = id || props.name
   return <label className="field-label" htmlFor={inputId}>
     {label}
-    <select id={inputId} {...props}>{options.map((option) => {
+    <select id={inputId} aria-invalid={Boolean(error)} aria-describedby={error ? `${inputId}-error` : undefined} {...props}>{options.map((option) => {
       const value = typeof option === 'string' ? option : option.value
       const text = typeof option === 'string' ? option : option.label
       return <option key={value} value={value}>{text}</option>
     })}</select>
+    {error && <span className="field-error" id={`${inputId}-error`}>{error}</span>}
   </label>
 }
 
@@ -53,8 +54,8 @@ export function EmptyState({ title, message, action }) {
   return <div className="empty-state"><div className="empty-icon" aria-hidden="true">⌕</div><h3>{title}</h3><p>{message}</p>{action}</div>
 }
 
-export function ConfirmModal({ title, message, onConfirm, onClose, confirmLabel = 'Confirm' }) {
-  return <Modal title={title} onClose={onClose}><div className="confirm-modal-content"><p>{message}</p><div className="confirm-actions"><Button onClick={onClose}>Cancel</Button><Button variant="primary" onClick={onConfirm}>{confirmLabel}</Button></div></div></Modal>
+export function ConfirmModal({ title, message, onConfirm, onClose, confirmLabel = 'Confirm', error, isLoading = false }) {
+  return <Modal title={title} onClose={onClose}><div className="confirm-modal-content"><p>{message}</p>{error && <ErrorMessage>{error}</ErrorMessage>}<div className="confirm-actions"><Button onClick={onClose} disabled={isLoading}>Cancel</Button><Button variant="primary" onClick={onConfirm} disabled={isLoading}>{isLoading ? 'Working...' : confirmLabel}</Button></div></div></Modal>
 }
 
 export function DataTable({ columns, rows, rowKey = 'id', emptyTitle = 'Nothing here yet', emptyMessage = 'There are no items to show.' }) {

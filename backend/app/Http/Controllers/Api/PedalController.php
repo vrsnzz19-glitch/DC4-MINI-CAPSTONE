@@ -44,6 +44,23 @@ class PedalController extends Controller
         return PedalResource::collection($pedals);
     }
 
+    public function filters(): JsonResponse
+    {
+        return response()->json([
+            'types' => Pedal::query()
+                ->whereNotNull('type')
+                ->where('type', '<>', '')
+                ->distinct()
+                ->orderBy('type')
+                ->pluck('type'),
+            'statuses' => Pedal::query()
+                ->whereNotNull('status')
+                ->distinct()
+                ->orderBy('status')
+                ->pluck('status'),
+        ]);
+    }
+
     public function show(Pedal $pedal): PedalResource
     {
         return PedalResource::make($pedal->load('category'));
