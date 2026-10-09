@@ -1,24 +1,80 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Button, Card, DataTable, EmptyState, ErrorMessage, FormInput, SearchBar, SelectInput, StatusBadge } from '../components/ui'
+import { Button, Card, DataTable, EmptyState, ErrorMessage, FormInput, SearchBar, SelectInput, StatusBadge, SuccessMessage } from '../components/ui'
+import useAuth from '../hooks/useAuth'
 import AdminLayout from '../layouts/AdminLayout'
 import PublicLayout from '../layouts/PublicLayout'
 
 function AuthPage({ register = false }) {
   const navigate = useNavigate()
+  const { login, register: createAccount } = useAuth()
+  const [values, setValues] = useState({ name: '', email: '', password: '', password_confirmation: '' })
+  const [fieldErrors, setFieldErrors] = useState({})
   const [message, setMessage] = useState('')
-  const submit = (event) => {
+  const [success, setSuccess] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const updateField = (event) => {
+    const { name, value } = event.target
+    setValues((current) => ({ ...current, [name]: value }))
+    setFieldErrors((current) => ({ ...current, [name]: undefined }))
+    setMessage('')
+  }
+
+  const submit = async (event) => {
     event.preventDefault()
-    setMessage('Sign-in is not connected in this local preview.')
+    setMessage('')
+    setSuccess('')
+    setFieldErrors({})
+
+    const errors = {}
+    if (register && !values.name.trim()) errors.name = 'Please enter your name.'
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email)) errors.email = 'Enter a valid email address.'
+    if (!values.password) errors.password = 'Please enter your password.'
+    else if (register && values.password.length < 8) errors.password = 'Use at least 8 characters.'
+    if (register && values.password !== values.password_confirmation) {
+      errors.password_confirmation = 'Passwords do not match.'
+    }
+
+    if (Object.keys(errors).length) {
+      setFieldErrors(errors)
+      return
+    }
+
+    setIsSubmitting(true)
+    try {
+      const response = register
+        ? await createAccount({
+          name: values.name.trim(),
+          email: values.email.trim(),
+          password: values.password,
+          password_confirmation: values.password_confirmation,
+        })
+        : await login({ email: values.email.trim(), password: values.password })
+      setSuccess(response.message || (register ? 'Your account is ready.' : 'Welcome back.'))
+      window.setTimeout(() => navigate(response.user.role === 'admin' ? '/admin' : '/', { replace: true }), 700)
+    } catch (error) {
+      if (error.response?.status === 422) {
+        const serverErrors = error.response.data.errors || {}
+        setFieldErrors(Object.fromEntries(Object.entries(serverErrors).map(([key, messages]) => [key, messages[0]])))
+        setMessage(error.response.data.message || 'Please check the highlighted fields.')
+      } else {
+        setMessage(error.response?.data?.message || 'Unable to connect to ToneVault. Please try again.')
+      }
+    } finally {
+      setIsSubmitting(false)
+    }
   }
   return <PublicLayout title={register ? 'Make room for a new sound.' : 'Welcome back to your studio.'}>
     <div className="auth-card"><span className="eyebrow">{register ? 'START YOUR STUDIO' : 'YOUR STUDIO AWAITS'}</span><h2>{register ? 'Create an account' : 'Sign in'}</h2><p>{register ? 'Keep your boards and tone recipes together.' : 'Pick up where your next great tone begins.'}</p>
-      <form className="form-stack" onSubmit={submit}>
-        {register && <FormInput name="name" label="Name" placeholder="Your name" autoComplete="name" required />}
-        <FormInput name="email" label="Email" type="email" placeholder="you@example.com" autoComplete="email" required />
-        <FormInput name="password" label="Password" type="password" placeholder="At least 8 characters" autoComplete={register ? 'new-password' : 'current-password'} required minLength={8} />
+      <form className="form-stack auth-form" onSubmit={submit} noValidate>
+        {register && <FormInput name="name" label="Name" placeholder="Your name" autoComplete="name" value={values.name} onChange={updateField} error={fieldErrors.name} required />}
+        <FormInput name="email" label="Email" type="email" placeholder="you@example.com" autoComplete="email" value={values.email} onChange={updateField} error={fieldErrors.email} required />
+        <FormInput name="password" label="Password" type="password" placeholder={register ? 'At least 8 characters' : 'Your password'} autoComplete={register ? 'new-password' : 'current-password'} value={values.password} onChange={updateField} error={fieldErrors.password} required minLength={register ? 8 : undefined} />
+        {register && <FormInput name="password_confirmation" label="Confirm password" type="password" placeholder="Enter your password again" autoComplete="new-password" value={values.password_confirmation} onChange={updateField} error={fieldErrors.password_confirmation} required />}
         {message && <ErrorMessage>{message}</ErrorMessage>}
-        <Button type="submit" variant="primary">{register ? 'Create account' : 'Sign in'}</Button>
+        {success && <SuccessMessage>{success}</SuccessMessage>}
+        <Button type="submit" variant="primary" disabled={isSubmitting}>{isSubmitting ? 'Please wait...' : register ? 'Create account' : 'Sign in'}</Button>
       </form>
       <p className="auth-switch">{register ? 'Already have an account?' : 'New to ToneVault?'} <Link to={register ? '/login' : '/register'}>{register ? 'Sign in' : 'Create an account'}</Link></p>
       <button className="auth-back" onClick={() => navigate('/')}>Back to the preview</button>

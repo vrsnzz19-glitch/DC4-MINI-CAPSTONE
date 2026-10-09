@@ -5,7 +5,7 @@ tags:
 - decision
 - git
 created: 2026-10-07
-updated: 2026-10-08
+updated: 2026-10-09
 filenames:
 - .refact/buddy/briefings/2026-10-07.json
 - .refact/buddy/chats/workflows/buddy_docs_gardener.json
@@ -24,7 +24,7 @@ kind: decision
 status: proposed
 superseded_by: null
 deprecated_at: null
-review_after: 2026-10-08
+review_after: 2026-10-09
 source_chat_id: null
 created_at: 2026-10-07T09:49:44.426897700+00:00
 summary: null

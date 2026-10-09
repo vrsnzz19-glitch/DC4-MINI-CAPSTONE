@@ -1,9 +1,12 @@
 import { useMemo, useState } from 'react'
 import { BrowserRouter, Link, NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { NoticeProvider } from './context/NoticeContext'
+import AuthProvider from './context/AuthContext'
+import useAuth from './hooks/useAuth'
 import useNotice from './hooks/useNotice'
 import UserLayout from './layouts/UserLayout'
 import AdminLayout from './layouts/AdminLayout'
+import { AdminRoute, ProtectedRoute } from './components/ProtectedRoute'
 import {
   AdminCategoriesPage,
   AdminDashboardPage,
@@ -187,23 +190,28 @@ const navItems = [
   { label: 'Admin', path: '/admin', icon: 'admin' },
 ]
 
-function Sidebar({ mobileOpen, closeMenu, onLogout }) {
+function Sidebar({ mobileOpen, closeMenu, onLogout, user }) {
+  const visibleNavItems = navItems.filter((item) => item.label !== 'Admin' || user.role === 'admin')
+  const initials = user.name.split(/\s+/).map((part) => part[0]).join('').slice(0, 2).toUpperCase()
+
   return <>
     <aside className={`sidebar ${mobileOpen ? 'sidebar-open' : ''}`}>
       <Link to="/" className="brand" onClick={closeMenu}><span className="brand-mark"><span /><span /><span /></span><span>TONE<span className="brand-accent">VAULT</span><small>GUITAR RIG STUDIO</small></span></Link>
       <div className="workspace-label">WORKSPACE</div>
-      <nav className="side-nav">{navItems.map((item) => <NavLink key={item.path} to={item.path} end={item.path === '/'} onClick={closeMenu} className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}><Icon name={item.icon} /><span>{item.label}</span>{item.label === 'Admin' && <span className="admin-dot" />}</NavLink>)}</nav>
-      <div className="sidebar-bottom"><div className="sidebar-tip"><span className="tip-mark">✳</span><b>Chase your tone.</b><p>Every great sound starts with an idea.</p><div className="tip-wave">〰〰〰〰〰</div></div><button className="profile-row" onClick={onLogout}><span className="avatar">AM</span><span><b>Alex Morgan</b><small>Preview account</small></span><Icon name="logout" size={16} /></button></div>
+      <nav className="side-nav">{visibleNavItems.map((item) => <NavLink key={item.path} to={item.path} end={item.path === '/'} onClick={closeMenu} className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}><Icon name={item.icon} /><span>{item.label}</span>{item.label === 'Admin' && <span className="admin-dot" />}</NavLink>)}</nav>
+      <div className="sidebar-bottom"><div className="sidebar-tip"><span className="tip-mark">✳</span><b>Chase your tone.</b><p>Every great sound starts with an idea.</p><div className="tip-wave">〰〰〰〰〰</div></div><button className="profile-row" onClick={onLogout}><span className="avatar">{initials}</span><span><b>{user.name}</b><small>{user.role === 'admin' ? 'Administrator' : 'Guitarist'}</small></span><Icon name="logout" size={16} /></button></div>
     </aside>
     {mobileOpen && <button className="drawer-scrim" onClick={closeMenu} aria-label="Close navigation menu" />}
   </>
 }
 
-function Topbar({ onMenu, title }) {
-  return <header className="topbar"><button className="mobile-menu-button" aria-label="Open navigation" onClick={onMenu}><Icon name="menu" size={21} /></button><div className="breadcrumbs"><span>Workspace</span><Icon name="chevron" size={14} /><b>{title}</b></div><div className="topbar-right"><span className="local-indicator"><i /> Local preview</span><button className="topbar-avatar" aria-label="Account">AM</button></div></header>
+function Topbar({ onMenu, title, user }) {
+  const initials = user.name.split(/\s+/).map((part) => part[0]).join('').slice(0, 2).toUpperCase()
+  return <header className="topbar"><button className="mobile-menu-button" aria-label="Open navigation" onClick={onMenu}><Icon name="menu" size={21} /></button><div className="breadcrumbs"><span>Workspace</span><Icon name="chevron" size={14} /><b>{title}</b></div><div className="topbar-right"><span className="local-indicator"><i /> Signed in</span><button className="topbar-avatar" aria-label={`Signed in as ${user.name}`}>{initials}</button></div></header>
 }
 
 function AppFrame() {
+  const { user, logout } = useAuth()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [modal, setModal] = useState(null)
   const [boards, setBoards] = useState(initialBoards)
@@ -217,6 +225,15 @@ function AppFrame() {
   const location = useLocation()
   const navigate = useNavigate()
   const { notice, flash } = useNotice()
+  const handleLogout = async () => {
+    try {
+      await logout()
+    } catch {
+      flash('You were signed out, but the server could not confirm token revocation.')
+    } finally {
+      navigate('/login', { replace: true })
+    }
+  }
   const pageName = navItems.find((item) => item.path === location.pathname)?.label
     || ({ '/builder': 'Pedalboard Builder', '/pedalboards/create': 'Create Pedalboard', '/admin/pedals': 'Admin Pedals', '/admin/categories': 'Admin Categories', '/admin/rig-presets': 'Admin Rig Presets' })[location.pathname]
     || (location.pathname.startsWith('/pedals/') ? 'Pedal Details' : location.pathname.startsWith('/pedalboards/') ? 'Pedalboard Details' : 'Dashboard')
@@ -244,7 +261,7 @@ function AppFrame() {
   const saveBoard = () => { setBoards((current) => current.map((board) => board.id === 1 ? { ...board, count: chain.length, updated: 'Just now' } : board)); flash('Your changes are saved in this preview session.') }
 
   return <>
-    <UserLayout sidebar={<Sidebar mobileOpen={mobileOpen} closeMenu={() => setMobileOpen(false)} onLogout={() => navigate('/login')} />} topbar={<Topbar onMenu={() => setMobileOpen(true)} title={pageName} />} footer={<footer className="footer"><span>© 2026 ToneVault</span><span>Built for the love of tone <b>✳</b></span><span>Local preview · Mock data</span></footer>}>
+    <UserLayout sidebar={<Sidebar mobileOpen={mobileOpen} closeMenu={() => setMobileOpen(false)} onLogout={handleLogout} user={user} />} topbar={<Topbar onMenu={() => setMobileOpen(true)} title={pageName} user={user} />} footer={<footer className="footer"><span>© 2026 ToneVault</span><span>Built for the love of tone <b>✳</b></span><span>Studio workspace</span></footer>}>
       <Routes>
         <Route path="/" element={<Dashboard navigate={navigate} />} />
         <Route path="/pedals" element={<PedalLibrary search={search} setSearch={(value) => { setSearch(value); setPage(1) }} category={category} setCategory={(value) => { setCategory(value); setPage(1) }} type={type} setType={(value) => { setType(value); setPage(1) }} visiblePedals={visiblePedals} filteredPedals={filteredPedals} page={Math.min(page, pages)} setPage={setPage} onView={(pedal) => navigate(`/pedals/${pedal.id}`)} />} />
@@ -259,11 +276,13 @@ function AppFrame() {
         <Route path="/pedalboards/:id" element={<PedalboardDetailsPage board={boards.find((board) => board.id === Number(location.pathname.split('/').pop()))} onEdit={() => navigate('/builder')} />} />
         <Route path="/builder" element={<Builder chain={chain} onMove={updateChain} onRemove={(id) => setChain((current) => current.filter((pedal) => pedal.id !== id))} onSettings={(pedal) => setModal({ type: 'settings', value: pedal })} onAdd={() => setModal({ type: 'add-pedal' })} onSave={saveBoard} />} />
         <Route path="/rig-presets" element={<RigPresets presets={presets} onOpen={(preset) => setModal({ type: 'preset', value: preset })} onCreate={() => setModal({ type: 'new-preset' })} />} />
-        <Route path="/admin" element={<AdminDashboardPage pedals={pedals} presets={presets} navigate={navigate} onReview={(preset) => setModal({ type: 'preset', value: preset })} />} />
-        <Route path="/admin/overview" element={<AdminLayout><AdminPreview presets={presets} navigate={navigate} onNotice={flash} onReview={(preset) => setModal({ type: 'preset', value: preset })} /></AdminLayout>} />
-        <Route path="/admin/pedals" element={<AdminPedalsPage pedals={pedals} />} />
-        <Route path="/admin/categories" element={<AdminCategoriesPage pedals={pedals} />} />
-        <Route path="/admin/rig-presets" element={<AdminRigPresetsPage presets={presets} onReview={(preset) => setModal({ type: 'preset', value: preset })} />} />
+        <Route element={<AdminRoute />}>
+          <Route path="/admin" element={<AdminDashboardPage pedals={pedals} presets={presets} navigate={navigate} onReview={(preset) => setModal({ type: 'preset', value: preset })} />} />
+          <Route path="/admin/overview" element={<AdminLayout><AdminPreview presets={presets} navigate={navigate} onNotice={flash} onReview={(preset) => setModal({ type: 'preset', value: preset })} /></AdminLayout>} />
+          <Route path="/admin/pedals" element={<AdminPedalsPage pedals={pedals} />} />
+          <Route path="/admin/categories" element={<AdminCategoriesPage pedals={pedals} />} />
+          <Route path="/admin/rig-presets" element={<AdminRigPresetsPage presets={presets} onReview={(preset) => setModal({ type: 'preset', value: preset })} />} />
+        </Route>
         <Route path="*" element={<Dashboard navigate={navigate} />} />
       </Routes>
     </UserLayout>
@@ -336,9 +355,11 @@ function AdminManageCard({ number, title, text, count, onClick }) {
 }
 
 export default function App() {
-  return <NoticeProvider><BrowserRouter><Routes>
+  return <NoticeProvider><BrowserRouter><AuthProvider><Routes>
     <Route path="/login" element={<LoginPage />} />
     <Route path="/register" element={<RegisterPage />} />
-    <Route path="*" element={<AppFrame />} />
-  </Routes></BrowserRouter></NoticeProvider>
+    <Route element={<ProtectedRoute />}>
+      <Route path="*" element={<AppFrame />} />
+    </Route>
+  </Routes></AuthProvider></BrowserRouter></NoticeProvider>
 }
