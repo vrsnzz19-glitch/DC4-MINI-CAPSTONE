@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Button, Card, DataTable, ErrorMessage, FormInput, SelectInput, StatusBadge, SuccessMessage } from '../components/ui'
+import { Button, Card, ErrorMessage, FormInput, SelectInput, SuccessMessage } from '../components/ui'
 import useAuth from '../hooks/useAuth'
 import AdminLayout from '../layouts/AdminLayout'
 import PublicLayout from '../layouts/PublicLayout'
@@ -86,31 +86,35 @@ function AuthPage({ register = false }) {
 export function LoginPage() { return <AuthPage /> }
 export function RegisterPage() { return <AuthPage register /> }
 
-export function AdminDashboardPage({ presets, navigate, onReview }) {
+export function AdminDashboardPage({ navigate }) {
   const [pedalCount, setPedalCount] = useState(0)
   const [categoryCount, setCategoryCount] = useState(0)
+  const [presetCount, setPresetCount] = useState(0)
+  const [pendingCount, setPendingCount] = useState(0)
   const [catalogError, setCatalogError] = useState('')
-  const pending = presets.filter((preset) => preset.status === 'Submitted')
   useEffect(() => {
     const controller = new AbortController()
     Promise.all([
       apiClient.get('/pedals', { params: { per_page: 1 }, signal: controller.signal }),
       apiClient.get('/categories', { signal: controller.signal }),
-    ]).then(([pedalsResponse, categoriesResponse]) => {
+      apiClient.get('/rig-presets', { params: { page: 1 }, signal: controller.signal }),
+    ]).then(async ([pedalsResponse, categoriesResponse, presetsResponse]) => {
+      const presets = [...presetsResponse.data.data]
+      for (let page = 2; page <= presetsResponse.data.meta.last_page; page += 1) {
+        const response = await apiClient.get('/rig-presets', { params: { page }, signal: controller.signal })
+        presets.push(...response.data.data)
+      }
       setPedalCount(pedalsResponse.data.meta.total)
       setCategoryCount(categoriesResponse.data.data.length)
+      setPresetCount(presetsResponse.data.meta.total)
+      setPendingCount(presets.filter((preset) => preset.status === 'Submitted').length)
     }).catch((error) => {
       if (!controller.signal.aborted) setCatalogError(error.response?.data?.message || 'Unable to load catalog summary.')
     })
     return () => controller.abort()
   }, [])
 
-  return <AdminLayout><div className="section-heading"><div><span className="eyebrow">STUDIO CONTROL</span><h1>Admin dashboard</h1><p>Manage the live pedal catalog and category list.</p></div></div>{catalogError && <ErrorMessage>{catalogError}</ErrorMessage>}<div className="admin-stats"><Card className="admin-stat"><span>Pedals</span><b>{pedalCount}</b><small>Live catalog</small></Card><Card className="admin-stat"><span>Categories</span><b>{categoryCount}</b><small>Live catalog</small></Card><Card className="admin-stat"><span>Rig presets</span><b>{presets.length}</b><small>Preview catalog</small></Card><Card className="admin-stat"><span>Awaiting review</span><b>{pending.length}</b><small>Submitted presets</small></Card></div><div className="admin-manage-grid"><button className="admin-manage-card" onClick={() => navigate('/admin/pedals')}><b>Manage pedals</b><p>Create, edit, and remove pedals in the catalog.</p><span className="manage-bottom">Open pedals →</span></button><button className="admin-manage-card" onClick={() => navigate('/admin/categories')}><b>Manage categories</b><p>Organize effect categories in the catalog.</p><span className="manage-bottom">Open categories →</span></button><button className="admin-manage-card" onClick={() => navigate('/admin/rig-presets')}><b>Review rig presets</b><p>{pending.length} submissions waiting for review.</p><span className="manage-bottom">Open review queue →</span></button></div>{pending[0] && <Button onClick={() => onReview(pending[0])}>Review {pending[0].name}</Button>}</AdminLayout>
-}
-
-export function AdminRigPresetsPage({ presets, onReview }) {
-  const columns = [{ key: 'name', label: 'Preset' }, { key: 'board', label: 'Pedalboard' }, { key: 'guitar', label: 'Guitar' }, { key: 'status', label: 'Status', render: (preset) => <StatusBadge tone={preset.color}>{preset.status}</StatusBadge> }, { key: 'actions', label: '', render: (preset) => <Button onClick={() => onReview(preset)}>View</Button> }]
-  return <AdminLayout><div className="section-heading"><div><span className="eyebrow">REVIEW QUEUE</span><h1>Admin rig presets</h1><p>Sample presets are not persisted or submitted to a server.</p></div></div><Card className="admin-page-card"><DataTable columns={columns} rows={presets} emptyTitle="No presets" /></Card></AdminLayout>
+  return <AdminLayout><div className="section-heading"><div><span className="eyebrow">STUDIO CONTROL</span><h1>Admin dashboard</h1><p>Manage the live pedal catalog and review submitted rig presets.</p></div></div>{catalogError && <ErrorMessage>{catalogError}</ErrorMessage>}<div className="admin-stats"><Card className="admin-stat"><span>Pedals</span><b>{pedalCount}</b><small>Live catalog</small></Card><Card className="admin-stat"><span>Categories</span><b>{categoryCount}</b><small>Live catalog</small></Card><Card className="admin-stat"><span>Rig presets</span><b>{presetCount}</b><small>Live API data</small></Card><Card className="admin-stat"><span>Awaiting review</span><b>{pendingCount}</b><small>Submitted presets</small></Card></div><div className="admin-manage-grid"><button className="admin-manage-card" onClick={() => navigate('/admin/pedals')}><b>Manage pedals</b><p>Create, edit, and remove pedals in the catalog.</p><span className="manage-bottom">Open pedals →</span></button><button className="admin-manage-card" onClick={() => navigate('/admin/categories')}><b>Manage categories</b><p>Organize effect categories in the catalog.</p><span className="manage-bottom">Open categories →</span></button><button className="admin-manage-card" onClick={() => navigate('/admin/rig-presets')}><b>Review rig presets</b><p>{pendingCount} submissions waiting for review.</p><span className="manage-bottom">Open review queue →</span></button></div></AdminLayout>
 }
 
 export function LocalPreviewNotice({ children }) {
