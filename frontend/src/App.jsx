@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { BrowserRouter, Link, NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
+import { BrowserRouter, Link, Navigate, NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { NoticeProvider } from './context/NoticeContext'
 import AuthProvider from './context/AuthContext'
 import useAuth from './hooks/useAuth'
@@ -13,18 +13,16 @@ import { AdminCategoriesPage, AdminPedalsPage } from './pages/AdminCatalogPages'
 import {
   AdminDashboardPage,
   AdminRigPresetsPage,
-  CreatePedalboardPage,
   LoginPage,
-  PedalboardDetailsPage,
   RegisterPage,
 } from './pages/StudioPages'
+import {
+  PedalboardBuilderPage,
+  PedalboardDetailsPage,
+  PedalboardFormPage,
+  PedalboardsPage,
+} from './pages/PedalboardsPage'
 import './App.css'
-
-const initialBoards = [
-  { id: 1, name: 'My Rock Setup', owner: 'Alex Morgan', updated: 'Oct 06, 2026', count: 6, style: 'rock' },
-  { id: 2, name: 'Clean Tone Board', owner: 'Alex Morgan', updated: 'Oct 03, 2026', count: 4, style: 'clean' },
-  { id: 3, name: 'Ambient Setup', owner: 'Alex Morgan', updated: 'Sep 28, 2026', count: 7, style: 'ambient' },
-]
 
 const initialPresets = [
   { id: 1, name: 'Clean Worship Tone', board: 'Clean Tone Board', guitar: 'Fender Stratocaster', tuning: 'E Standard', amp: 'Gain 3 · Bass 5 · Mid 6 · Treble 5', status: 'Approved', color: 'green' },
@@ -76,45 +74,22 @@ function Card({ children, className = '' }) {
   return <section className={`card ${className}`}>{children}</section>
 }
 
-function PedalboardCard({ board, onOpen, onEdit }) {
-  return <Card className="board-card"><div className={`board-art art-${board.style}`}><span className="art-label">SIGNAL CHAIN</span><div className="art-pedals"><i /><i /><i /><i /><i /></div><div className="art-cable" /></div><div className="board-card-body"><div className="board-card-title"><div><h3>{board.name}</h3><span className="muted-small">{board.count} pedals · {board.owner}</span></div><button className="icon-button" aria-label="More options"><Icon name="more" /></button></div><div className="board-meta"><span><Icon name="clock" size={14} /> Updated {board.updated}</span><div><Button onClick={() => onEdit(board)}>Edit</Button><Button variant="primary" onClick={() => onOpen(board)}>View board</Button></div></div></div></Card>
-}
-
-function PedalChainItem({ pedal, index, count, onMove, onRemove, onSettings }) {
-  return <div className="chain-pedal">
-    <div className={`mini-pedal pedal-${pedal.color}`}><span>{pedal.initials}</span><i /></div>
-    <div className="chain-info"><strong>{pedal.name}</strong><span>{pedal.brand} · {pedal.type}</span></div>
-    <div className="chain-actions"><button aria-label="Move pedal up" disabled={index === 0} onClick={() => onMove(index, -1)}><Icon name="up" size={15} /></button><button aria-label="Move pedal down" disabled={index === count - 1} onClick={() => onMove(index, 1)}><Icon name="down" size={15} /></button><button aria-label="Pedal settings" onClick={() => onSettings(pedal)}><Icon name="tune" size={15} /></button><button aria-label="Remove pedal" onClick={() => onRemove(pedal.id)}><Icon name="close" size={15} /></button></div>
-  </div>
-}
-
-function SignalChain({ chain, onMove, onRemove, onSettings }) {
-  return <div className="signal-chain">
-    <div className="chain-end"><span className="end-icon"><Icon name="guitar" size={20} /></span><b>Guitar</b><small>Input</small></div>
-    {chain.map((pedal, index) => <div className="chain-step" key={pedal.id}><span className="chain-wire" /><PedalChainItem pedal={pedal} index={index} count={chain.length} onMove={onMove} onRemove={onRemove} onSettings={onSettings} /><span className="chain-wire" /></div>)}
-    <div className="chain-end amp-end"><span className="amp-stack"><i /><i /></span><b>Amplifier</b><small>Output</small></div>
-  </div>
-}
-
 function RigPresetCard({ preset, onOpen }) {
   return <Card className="preset-card"><div className="preset-card-top"><div className="preset-icon"><Icon name="preset" size={20} /></div><StatusBadge tone={preset.color}>{preset.status}</StatusBadge></div><h3>{preset.name}</h3><p className="preset-board"><Icon name="board" size={15} /> {preset.board}</p><div className="preset-details"><div><span>Guitar</span><b>{preset.guitar}</b></div><div><span>Tuning</span><b>{preset.tuning}</b></div><div className="amp-detail"><span>Amp settings</span><b>{preset.amp}</b></div></div><button className="text-link" onClick={() => onOpen(preset)}>View preset <Icon name="arrow" size={14} /></button></Card>
 }
 
-function EmptyState({ title, message, action }) {
-  return <div className="empty-state"><div className="empty-icon"><Icon name="search" size={22} /></div><h3>{title}</h3><p>{message}</p>{action}</div>
+function CreatePresetForm({ onCreate }) {
+  const [name, setName] = useState('')
+  const [amp, setAmp] = useState('')
+  return <form className="form-stack" onSubmit={(event) => { event.preventDefault(); onCreate(name.trim(), amp.trim()) }}>
+    <label className="field-label">Name<input required maxLength={150} value={name} onChange={(event) => setName(event.target.value)} placeholder="e.g. Warm Clean Tone" /></label>
+    <label className="field-label">Amp settings<textarea rows="3" value={amp} onChange={(event) => setAmp(event.target.value)} placeholder="Gain 3 · Bass 5 · Mid 6 · Treble 5" /></label>
+    <Button variant="primary" type="submit">Save draft preset</Button>
+  </form>
 }
 
-function CreatePreviewForm({ type, onCreate }) {
-  const [name, setName] = useState('')
-  const [description, setDescription] = useState('')
-  const isBoard = type === 'new-board'
-
-  return <form className="form-stack" onSubmit={(event) => { event.preventDefault(); if (name.trim()) onCreate(name.trim(), description.trim()) }}>
-    <p className="muted">Preview-only form. This creates a temporary item in local React state; no backend request is made.</p>
-    <label className="field-label">Name<input required value={name} onChange={(event) => setName(event.target.value)} placeholder={isBoard ? 'e.g. Sunday Session Board' : 'e.g. Warm Clean Tone'} /></label>
-    <label className="field-label">{isBoard ? 'Description' : 'Amp settings'}<textarea rows="3" value={description} onChange={(event) => setDescription(event.target.value)} placeholder={isBoard ? 'What makes this board yours?' : 'Gain 3 · Bass 5 · Mid 6 · Treble 5'} /></label>
-    <Button variant="primary" type="submit" icon="plus">{isBoard ? 'Create board' : 'Save draft preset'}</Button>
-  </form>
+function EmptyState({ title, message, action }) {
+  return <div className="empty-state"><div className="empty-icon"><Icon name="search" size={22} /></div><h3>{title}</h3><p>{message}</p>{action}</div>
 }
 
 function Modal({ title, onClose, children, wide = false }) {
@@ -153,24 +128,10 @@ function AppFrame() {
   const { user, logout } = useAuth()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [modal, setModal] = useState(null)
-  const [boards, setBoards] = useState(initialBoards)
   const [presets, setPresets] = useState(initialPresets)
-  const [chain, setChain] = useState([])
-  const [catalogPedals, setCatalogPedals] = useState([])
-  const [settings, setSettings] = useState({})
   const location = useLocation()
   const navigate = useNavigate()
   const { notice, flash } = useNotice()
-  useEffect(() => {
-    if (modal?.type !== 'add-pedal') return undefined
-    const controller = new AbortController()
-    apiClient.get('/pedals', { params: { per_page: 100 }, signal: controller.signal })
-      .then((response) => setCatalogPedals(response.data.data))
-      .catch((error) => {
-        if (!controller.signal.aborted) flash(error.response?.data?.message || 'Unable to load pedals for the builder.')
-      })
-    return () => controller.abort()
-  }, [modal, flash])
   const handleLogout = async () => {
     try {
       await logout()
@@ -183,36 +144,18 @@ function AppFrame() {
   const pageName = navItems.find((item) => item.path === location.pathname)?.label
     || ({ '/builder': 'Pedalboard Builder', '/pedalboards/create': 'Create Pedalboard', '/admin/pedals': 'Admin Pedals', '/admin/categories': 'Admin Categories', '/admin/rig-presets': 'Admin Rig Presets' })[location.pathname]
     || (location.pathname.startsWith('/pedals/') ? 'Pedal Details' : location.pathname.startsWith('/pedalboards/') ? 'Pedalboard Details' : 'Dashboard')
-  function updateChain(index, direction) {
-    const next = [...chain]
-    const destination = index + direction
-    if (destination < 0 || destination >= next.length) return
-    ;[next[index], next[destination]] = [next[destination], next[index]]
-    setChain(next)
-  }
-
-  function addPedal(pedal) {
-    setChain((current) => [...current, { ...pedal, id: Date.now() }])
-    setModal(null)
-  }
-
-  const saveBoard = () => { setBoards((current) => current.map((board) => board.id === 1 ? { ...board, count: chain.length, updated: 'Just now' } : board)); flash('Your changes are saved in this preview session.') }
-
   return <>
     <UserLayout sidebar={<Sidebar mobileOpen={mobileOpen} closeMenu={() => setMobileOpen(false)} onLogout={handleLogout} user={user} />} topbar={<Topbar onMenu={() => setMobileOpen(true)} title={pageName} user={user} />} footer={<footer className="footer"><span>© 2026 ToneVault</span><span>Built for the love of tone <b>✳</b></span><span>Studio workspace</span></footer>}>
       <Routes>
         <Route path="/" element={<Dashboard navigate={navigate} />} />
         <Route path="/pedals" element={<PedalLibraryPage />} />
         <Route path="/pedals/:id" element={<PedalDetailPage />} />
-        <Route path="/pedalboards" element={<Pedalboards boards={boards} onOpen={(board) => navigate(`/pedalboards/${board.id}`)} onEdit={() => navigate('/builder')} onCreate={() => navigate('/pedalboards/create')} />} />
-        <Route path="/pedalboards/create" element={<CreatePedalboardPage onCreate={(name) => {
-          const board = { id: Date.now(), name, owner: 'Alex Morgan', updated: 'Just now', count: 0, style: 'clean' }
-          setBoards((current) => [...current, board])
-          navigate(`/pedalboards/${board.id}`)
-          flash('Added to this browser preview only.')
-        }} />} />
-        <Route path="/pedalboards/:id" element={<PedalboardDetailsPage board={boards.find((board) => board.id === Number(location.pathname.split('/').pop()))} onEdit={() => navigate('/builder')} />} />
-        <Route path="/builder" element={<Builder chain={chain} onMove={updateChain} onRemove={(id) => setChain((current) => current.filter((pedal) => pedal.id !== id))} onSettings={(pedal) => setModal({ type: 'settings', value: pedal })} onAdd={() => setModal({ type: 'add-pedal' })} onSave={saveBoard} />} />
+        <Route path="/pedalboards" element={<PedalboardsPage />} />
+        <Route path="/pedalboards/create" element={<PedalboardFormPage />} />
+          <Route path="/pedalboards/:id/edit" element={<PedalboardFormPage key={location.pathname} />} />
+          <Route path="/pedalboards/:id/builder" element={<PedalboardBuilderPage key={location.pathname} />} />
+          <Route path="/pedalboards/:id" element={<PedalboardDetailsPage key={location.pathname} />} />
+        <Route path="/builder" element={<Navigate to="/pedalboards" replace />} />
         <Route path="/rig-presets" element={<RigPresets presets={presets} onOpen={(preset) => setModal({ type: 'preset', value: preset })} onCreate={() => setModal({ type: 'new-preset' })} />} />
         <Route element={<AdminRoute />}>
           <Route path="/admin" element={<AdminDashboardPage presets={presets} navigate={navigate} onReview={(preset) => setModal({ type: 'preset', value: preset })} />} />
@@ -225,20 +168,11 @@ function AppFrame() {
       </Routes>
     </UserLayout>
     {notice && <div className="toast" role="status"><Icon name="check" size={17} />{notice}</div>}
-    {modal && <Modal title={modal.type === 'pedal' ? modal.value.name : modal.type === 'settings' ? `${modal.value.name} settings` : modal.type === 'preset' ? modal.value.name : modal.type === 'add-pedal' ? 'Add a pedal' : modal.type === 'new-board' ? 'Create pedalboard' : modal.type === 'new-preset' ? 'Create rig preset' : 'Category management'} onClose={() => setModal(null)} wide={modal.type === 'add-pedal'}>
-      {modal.type === 'pedal' && <div className="detail-modal"><div className={`pedal-visual pedal-${modal.value.color}`}><span className="pedal-brand">{modal.value.brand}</span><span className="pedal-face">{modal.value.initials}</span><span className="pedal-led" /><span className="pedal-footswitch" /></div><div><span className="tag">{modal.value.category}</span><p>{modal.value.type} effect by {modal.value.brand}.</p><Button variant="primary" onClick={() => addPedal(modal.value)}>Add to current board</Button></div></div>}
-      {modal.type === 'settings' && <div className="form-stack"><p className="muted">Adjust the local settings for {modal.value.name}.</p>{['Level', 'Tone', 'Mix'].map((key) => <label className="range-setting" key={key}><span>{key}<b>{settings[`${modal.value.id}-${key}`] ?? 50}%</b></span><input type="range" value={settings[`${modal.value.id}-${key}`] ?? 50} onChange={(event) => setSettings((current) => ({ ...current, [`${modal.value.id}-${key}`]: event.target.value }))} /></label>)}<label className="field-label">Notes<textarea rows="3" placeholder="Add a note for this pedal..." /></label><Button variant="primary" onClick={() => { setModal(null); flash('Pedal settings updated in local preview.') }}>Done</Button></div>}
-      {modal.type === 'add-pedal' && <div className="add-pedal-grid">{catalogPedals.filter((pedal) => !chain.some((item) => item.id === pedal.id || item.name === pedal.name)).map((pedal) => <button key={pedal.id} className="add-pedal-option" onClick={() => addPedal(pedal)}><span className="mini-pedal pedal-black"><span>{(pedal.model || pedal.name).slice(0, 2).toUpperCase()}</span></span><span><b>{pedal.name}</b><small>{pedal.brand} · {pedal.type}</small></span><Icon name="plus" size={17} /></button>)}</div>}
-      {(modal.type === 'new-board' || modal.type === 'new-preset') && <CreatePreviewForm type={modal.type} onCreate={(name, description) => {
-        if (modal.type === 'new-board') {
-          setBoards((current) => [...current, { id: Date.now(), name, owner: 'Alex Morgan', updated: 'Just now', count: 0, style: 'clean' }])
-          navigate('/pedalboards')
-        } else {
-          setPresets((current) => [...current, { id: Date.now(), name, board: 'My Rock Setup', guitar: 'Fender Stratocaster', tuning: 'E Standard', amp: description || 'Gain 3 · Bass 5 · Mid 6 · Treble 5', status: 'Draft', color: 'muted' }])
-          navigate('/rig-presets')
-        }
+    {modal && <Modal title={modal.type === 'preset' ? modal.value.name : 'Create rig preset'} onClose={() => setModal(null)}>
+      {modal.type === 'new-preset' && <CreatePresetForm onCreate={(name, amp) => {
+        setPresets((current) => [...current, { id: Date.now(), name, board: 'My Rock Setup', guitar: 'Fender Stratocaster', tuning: 'E Standard', amp: amp || 'Gain 3 · Bass 5 · Mid 6 · Treble 5', status: 'Draft', color: 'muted' }])
         setModal(null)
-        flash('Added to this browser preview only.')
+        flash('Added to this browser preview.')
       }} />}
       {modal.type === 'preset' && <div className="form-stack"><div className="preset-modal-status"><StatusBadge tone={modal.value.color}>{modal.value.status}</StatusBadge></div><div className="preset-modal-grid"><div><small>Pedalboard</small><b>{modal.value.board}</b></div><div><small>Guitar</small><b>{modal.value.guitar}</b></div><div><small>Tuning</small><b>{modal.value.tuning}</b></div><div><small>Amp settings</small><b>{modal.value.amp}</b></div></div><p className="muted">Preset details are sample content for the visual preview.</p></div>}
     </Modal>}
@@ -248,6 +182,7 @@ function AppFrame() {
 function Dashboard({ navigate }) {
   const [catalogPedals, setCatalogPedals] = useState([])
   const [pedalCount, setPedalCount] = useState(0)
+  const [pedalboardCount, setPedalboardCount] = useState(null)
   const [isLoadingPedals, setIsLoadingPedals] = useState(true)
   const [pedalError, setPedalError] = useState('')
 
@@ -267,29 +202,31 @@ function Dashboard({ navigate }) {
     return () => controller.abort()
   }, [])
 
+  useEffect(() => {
+    const controller = new AbortController()
+    apiClient.get('/pedalboards', { params: { page: 1 }, signal: controller.signal })
+      .then((response) => setPedalboardCount(response.data.meta.total))
+      .catch((error) => {
+        if (!controller.signal.aborted) setPedalError(error.response?.data?.message || 'Unable to load your pedalboards.')
+      })
+    return () => controller.abort()
+  }, [])
+
   return <>
-    <div className="welcome-banner"><div className="welcome-copy"><span className="eyebrow banner-eyebrow">THURSDAY, OCTOBER 08, 2026</span><h1>Good evening, Alex <span>✳</span></h1><p>Your sound is taking shape. Ready to find your next tone?</p><Button variant="cream" icon="arrow" onClick={() => navigate('/builder')}>Continue building <Icon name="arrow" size={15} /></Button></div><div className="welcome-art"><span className="orbit orbit-one" /><span className="orbit orbit-two" /><div className="hero-pedal"><span>TV</span><i /><small>TONEVAULT</small></div><div className="art-spark spark-one">✳</div><div className="art-spark spark-two">✦</div></div></div>
+    <div className="welcome-banner"><div className="welcome-copy"><span className="eyebrow banner-eyebrow">THURSDAY, OCTOBER 08, 2026</span><h1>Good evening, Alex <span>✳</span></h1><p>Your sound is taking shape. Ready to find your next tone?</p><Button variant="cream" icon="arrow" onClick={() => navigate('/pedalboards')}>View your pedalboards <Icon name="arrow" size={15} /></Button></div><div className="welcome-art"><span className="orbit orbit-one" /><span className="orbit orbit-two" /><div className="hero-pedal"><span>TV</span><i /><small>TONEVAULT</small></div><div className="art-spark spark-one">✳</div><div className="art-spark spark-two">✦</div></div></div>
     <div className="dashboard-section-top"><div><span className="eyebrow">YOUR STUDIO</span><h2>At a glance</h2></div><span className="updated-label"><i /> Updated just now</span></div>
     <div className="stats-grid">
       <StatCard label="Total pedals" number={isLoadingPedals ? '—' : pedalCount} note="In your library" icon="pedal" trend="Browse catalog" tone="orange" />
-      <StatCard label="My pedalboards" number="3" note="Across your studio" icon="board" trend="View all" tone="purple" />
+      <StatCard label="My pedalboards" number={pedalboardCount ?? '—'} note="Across your studio" icon="board" trend="View all" tone="purple" />
       <StatCard label="Rig presets" number="5" note="Tone recipes saved" icon="preset" trend="2 approved" tone="green" />
       <Card className="quote-card"><span className="quote-mark">“</span><p>Tone is in the fingers,<br />but the pedals help.</p><span>— every guitarist, eventually</span><div className="quote-wave">〰〰〰〰〰〰〰</div></Card>
     </div>
-    <div className="dashboard-columns"><Card className="recent-card"><div className="card-heading"><div><span className="eyebrow">RECENTLY IN YOUR LIBRARY</span><h2>Popular pedals</h2></div><button className="text-link" onClick={() => navigate('/pedals')}>View library <Icon name="arrow" size={14} /></button></div>{pedalError ? <p className="muted" role="alert">{pedalError}</p> : isLoadingPedals ? <div className="mini-library-loading" role="status">Loading pedals...</div> : catalogPedals.length ? <div className="mini-library">{catalogPedals.map((pedal) => <div className="mini-library-row" key={pedal.id}><div className="library-icon pedal-black">{(pedal.model || pedal.name).slice(0, 2).toUpperCase()}</div><div><b>{pedal.name}</b><span>{pedal.brand} · {pedal.category?.name || pedal.type}</span></div><Icon name="chevron" size={16} /></div>)}</div> : <p className="muted">No pedals in the catalog yet.</p>}</Card><Card className="quick-card"><span className="eyebrow">MAKE SOME NOISE</span><h2>Quick actions</h2><p>Jump back into your creative flow.</p><button className="quick-action" onClick={() => navigate('/pedals')}><span className="quick-icon"><Icon name="search" /></span><span><b>Browse pedals</b><small>Find your next sound</small></span><Icon name="arrow" size={16} /></button><button className="quick-action" onClick={() => navigate('/builder')}><span className="quick-icon"><Icon name="plus" /></span><span><b>Create pedalboard</b><small>Build a new signal chain</small></span><Icon name="arrow" size={16} /></button><button className="quick-action" onClick={() => navigate('/rig-presets')}><span className="quick-icon"><Icon name="preset" /></span><span><b>View rig presets</b><small>Explore your tone recipes</small></span><Icon name="arrow" size={16} /></button></Card></div>
+    <div className="dashboard-columns"><Card className="recent-card"><div className="card-heading"><div><span className="eyebrow">RECENTLY IN YOUR LIBRARY</span><h2>Popular pedals</h2></div><button className="text-link" onClick={() => navigate('/pedals')}>View library <Icon name="arrow" size={14} /></button></div>{pedalError ? <p className="muted" role="alert">{pedalError}</p> : isLoadingPedals ? <div className="mini-library-loading" role="status">Loading pedals...</div> : catalogPedals.length ? <div className="mini-library">{catalogPedals.map((pedal) => <div className="mini-library-row" key={pedal.id}><div className="library-icon pedal-black">{(pedal.model || pedal.name).slice(0, 2).toUpperCase()}</div><div><b>{pedal.name}</b><span>{pedal.brand} · {pedal.category?.name || pedal.type}</span></div><Icon name="chevron" size={16} /></div>)}</div> : <p className="muted">No pedals in the catalog yet.</p>}</Card><Card className="quick-card"><span className="eyebrow">MAKE SOME NOISE</span><h2>Quick actions</h2><p>Jump back into your creative flow.</p><button className="quick-action" onClick={() => navigate('/pedals')}><span className="quick-icon"><Icon name="search" /></span><span><b>Browse pedals</b><small>Find your next sound</small></span><Icon name="arrow" size={16} /></button><button className="quick-action" onClick={() => navigate('/pedalboards/create')}><span className="quick-icon"><Icon name="plus" /></span><span><b>Create pedalboard</b><small>Build a new signal chain</small></span><Icon name="arrow" size={16} /></button><button className="quick-action" onClick={() => navigate('/rig-presets')}><span className="quick-icon"><Icon name="preset" /></span><span><b>View rig presets</b><small>Explore your tone recipes</small></span><Icon name="arrow" size={16} /></button></Card></div>
   </>
 }
 
 function StatCard({ label, number, note, icon, trend, tone }) {
   return <Card className="stat-card"><div className={`stat-icon stat-${tone}`}><Icon name={icon} size={20} /></div><div className="stat-content"><span>{label}</span><b>{number}</b><small>{note}</small></div><div className="stat-footer"><span className={`stat-dot ${tone}`} />{trend}</div></Card>
-}
-
-function Pedalboards({ boards, onOpen, onEdit, onCreate }) {
-  return <><SectionHeading eyebrow="YOUR BUILDS" title="Pedalboards" description="Your sound, laid out from input to amp." action={<Button variant="primary" icon="plus" onClick={onCreate}>New pedalboard</Button>} /><div className="boards-banner"><div className="boards-banner-icon"><Icon name="board" size={21} /></div><div><b>Three boards. Endless possibilities.</b><p>Shape, save, and revisit the sounds you love.</p></div><span className="boards-banner-count">03 <small>BOARDS</small></span></div><div className="board-grid">{boards.map((board) => <PedalboardCard key={board.id} board={board} onOpen={onOpen} onEdit={onEdit} />)}</div></>
-}
-
-function Builder({ chain, onMove, onRemove, onSettings, onAdd, onSave }) {
-  return <><SectionHeading eyebrow="SIGNAL CHAIN STUDIO" title="My Rock Setup" description="Arrange the pieces that make your sound yours." action={<Button variant="primary" onClick={onSave} icon="check">Save pedalboard</Button>} /><div className="builder-toolbar"><div className="board-picker"><div className="board-picker-icon"><Icon name="board" /></div><span><small>EDITING PEDALBOARD</small><b>My Rock Setup <Icon name="down" size={14} /></b></span></div><div className="builder-toolbar-right"><span className="draft-indicator"><i /> Local changes</span><Button icon="plus" onClick={onAdd}>Add pedal</Button></div></div><Card className="signal-card"><div className="signal-card-heading"><div><span className="eyebrow">YOUR SIGNAL PATH</span><h2>From first note to final echo</h2></div><span className="signal-count">{chain.length} pedals</span></div><SignalChain chain={chain} onMove={onMove} onRemove={onRemove} onSettings={onSettings} /><div className="signal-footer"><span><i /> Signal flows left to right</span><span>Drag-free preview · Use arrows to reorder</span></div></Card><div className="builder-note"><span>✳</span><p><b>Make it yours.</b> Pedal changes stay in your browser preview and are not sent to a server.</p></div></>
 }
 
 function RigPresets({ presets, onOpen, onCreate }) {
@@ -300,6 +237,7 @@ function AdminPreview({ presets, navigate, onReview }) {
   const pending = presets.filter((preset) => preset.status === 'Submitted')
   const [pedalCount, setPedalCount] = useState(0)
   const [categoryCount, setCategoryCount] = useState(0)
+  const [boardCount, setBoardCount] = useState(0)
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -307,9 +245,11 @@ function AdminPreview({ presets, navigate, onReview }) {
     Promise.all([
       apiClient.get('/pedals', { params: { per_page: 1 }, signal: controller.signal }),
       apiClient.get('/categories', { signal: controller.signal }),
-    ]).then(([pedalsResponse, categoriesResponse]) => {
+      apiClient.get('/pedalboards', { params: { page: 1 }, signal: controller.signal }),
+    ]).then(([pedalsResponse, categoriesResponse, boardsResponse]) => {
       setPedalCount(pedalsResponse.data.meta.total)
       setCategoryCount(categoriesResponse.data.data.length)
+      setBoardCount(boardsResponse.data.meta.total)
     }).catch((requestError) => {
       if (!controller.signal.aborted) setError(requestError.response?.data?.message || 'Unable to load catalog summary.')
     })
@@ -319,7 +259,7 @@ function AdminPreview({ presets, navigate, onReview }) {
   return <>
     <SectionHeading eyebrow="STUDIO CONTROL" title="Admin overview" description="A quick look at the ToneVault collection." action={<span className="admin-preview-pill"><Icon name="admin" size={15} /> ADMIN PREVIEW</span>} />
     {error && <div className="inline-message error-message" role="alert">{error}</div>}
-    <div className="admin-stats"><AdminStat label="Total pedals" value={pedalCount} icon="pedal" /><AdminStat label="Total categories" value={categoryCount} icon="grid" /><AdminStat label="Total pedalboards" value="3" icon="board" /><AdminStat label="Pending rig presets" value={String(pending.length).padStart(2, '0')} icon="preset" /></div>
+    <div className="admin-stats"><AdminStat label="Total pedals" value={pedalCount} icon="pedal" /><AdminStat label="Total categories" value={categoryCount} icon="grid" /><AdminStat label="Total pedalboards" value={boardCount} icon="board" /><AdminStat label="Pending rig presets" value={String(pending.length).padStart(2, '0')} icon="preset" /></div>
     <div className="admin-manage-grid"><AdminManageCard number="01" title="Manage pedals" text="Review the pedal catalog and its details." count={`${pedalCount} pedals`} onClick={() => navigate('/admin/pedals')} /><AdminManageCard number="02" title="Manage categories" text="Keep your effect families organized." count={`${categoryCount} categories`} onClick={() => navigate('/admin/categories')} /><AdminManageCard number="03" title="Review rig presets" text="Submitted tone recipes waiting for review." count={`${pending.length} to review`} onClick={() => pending[0] && onReview(pending[0])} /></div>
     <Card className="review-table-card"><div className="card-heading"><div><span className="eyebrow">REQUIRES ATTENTION</span><h2>Preset review queue</h2></div><span className="table-count">{pending.length} awaiting review</span></div><div className="table-wrap"><table><thead><tr><th>PRESET NAME</th><th>OWNER</th><th>PEDALBOARD</th><th>SUBMITTED</th><th>STATUS</th><th /></tr></thead><tbody>{pending.length ? pending.map((preset) => <tr key={preset.id}><td><b>{preset.name}</b></td><td>Alex Morgan</td><td>{preset.board}</td><td>Oct 07, 2026</td><td><StatusBadge tone="orange">Submitted</StatusBadge></td><td><button className="text-link" onClick={() => onReview(preset)}>Review <Icon name="arrow" size={14} /></button></td></tr>) : <tr><td colSpan="6"><EmptyState title="All caught up" message="No presets are waiting for review." /></td></tr>}</tbody></table></div></Card>
     <p className="preview-disclaimer"><Icon name="admin" size={15} /> Preset review is a visual preview and does not manage live data.</p>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Button, Card, DataTable, EmptyState, ErrorMessage, FormInput, SelectInput, StatusBadge, SuccessMessage } from '../components/ui'
+import { Button, Card, DataTable, ErrorMessage, FormInput, SelectInput, StatusBadge, SuccessMessage } from '../components/ui'
 import useAuth from '../hooks/useAuth'
 import AdminLayout from '../layouts/AdminLayout'
 import PublicLayout from '../layouts/PublicLayout'
@@ -85,15 +85,6 @@ function AuthPage({ register = false }) {
 
 export function LoginPage() { return <AuthPage /> }
 export function RegisterPage() { return <AuthPage register /> }
-
-export function CreatePedalboardPage({ onCreate }) {
-  return <><div className="section-heading"><div><span className="eyebrow">YOUR BUILDS</span><h1>Create pedalboard</h1><p>Start a new signal chain in your local preview.</p></div></div><Card className="page-form-card"><form className="form-stack" onSubmit={(event) => { event.preventDefault(); onCreate(new FormData(event.currentTarget).get('name'), new FormData(event.currentTarget).get('description')) }}><FormInput name="name" label="Board name" placeholder="e.g. Sunday Session Board" required maxLength={80} /><label className="field-label">Description<textarea name="description" rows="4" maxLength={300} placeholder="What sound are you building toward?" /></label><div className="form-actions"><Link className="button button-secondary" to="/pedalboards">Cancel</Link><Button type="submit" variant="primary">Create board</Button></div></form></Card></>
-}
-
-export function PedalboardDetailsPage({ board, onEdit }) {
-  if (!board) return <EmptyState title="Pedalboard not found" message="This board is not available in the current preview." action={<Link className="text-link" to="/pedalboards">Back to pedalboards</Link>} />
-  return <><div className="section-heading"><div><span className="eyebrow">PEDALBOARD DETAILS</span><h1>{board.name}</h1><p>{board.count} pedals · Updated {board.updated}</p></div><Button variant="primary" onClick={() => onEdit(board)}>Open builder</Button></div><Card className="board-detail-card"><div className={`board-art art-${board.style}`}><span className="art-label">SIGNAL CHAIN</span><div className="art-pedals"><i /><i /><i /><i /><i /></div><div className="art-cable" /></div><div className="board-detail-body"><StatusBadge tone="green">Local preview</StatusBadge><p>This pedalboard is sample content for the ToneVault preview. Changes are kept in this browser session only.</p><Link className="text-link" to="/pedalboards">← All pedalboards</Link></div></Card></>
-}
 
 export function AdminDashboardPage({ presets, navigate, onReview }) {
   const [pedalCount, setPedalCount] = useState(0)
