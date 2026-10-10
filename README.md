@@ -12,7 +12,7 @@ The system uses a dark music-inspired interface with a modern dashboard. to help
 ## Features
 
 ### User Features
-- User registration and login
+- User registration and logincd backend
 - Secure authentication using Laravel Sanctum
 - Dashboard showing pedal, pedalboard, and saved preset counts
 - Browse and search the pedal library
@@ -107,40 +107,55 @@ DB_USERNAME=root
 DB_PASSWORD=
 ```
 
-Create the `tonevault_db` database using phpMyAdmin or your database management tool. Update the credentials if your local MySQL configuration is different.
+Make sure MySQL is running in Laragon. Set `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, and `DB_PASSWORD` to match your local MySQL configuration.
 
-### 4. Run Database Migrations and Seeders
+### 4. Create the Database, Run Migrations, and Seed
 
-```bash
-php artisan migrate --seed
+From the repository root, run this in PowerShell:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\setup-database.ps1
 ```
 
-This command runs the database migrations and available seeders. Demo accounts and sample pedals will only be created if the project's seeders are configured to create them.
+The script creates `tonevault_db` if it does not exist, then runs `php artisan migrate --seed` in the backend. If `DB_PASSWORD` is non-empty, MySQL securely prompts for it. PHP's `pdo_mysql` extension must be enabled for the PHP CLI used by Laragon; the script checks for it before migrating.
 
-### 5. Start the Laravel Backend
+Alternatively, create the database yourself, then run `php artisan migrate --seed` from `backend`.
 
-```bash
-php artisan serve
+### 5. Configure and Start the Laravel Backend
+
+In a PowerShell terminal:
+
+```powershell
+Set-Location .\backend
+php artisan serve --host=127.0.0.1 --port=8000
 ```
 
 The default local API address is:
 
 `http://127.0.0.1:8000`
 
-Keep this terminal running.
+Keep this terminal running. If you change Laravel environment values after starting it, run `php artisan optimize:clear` from `backend` and restart the server.
 
-### 6. Install Frontend Dependencies
+### 6. Configure and Start the Frontend
 
-Open a separate terminal and navigate to the React frontend folder:
+The frontend reads `VITE_API_URL` from `frontend/.env`. Create that local file from the example if it does not exist:
 
-```bash
-npm install
+```powershell
+Copy-Item .env.example .env
 ```
 
-### 7. Start the React Development Server
+Use this local API URL:
 
-```bash
-npm run dev
+```env
+VITE_API_URL=http://localhost:8000/api
+```
+
+From another PowerShell terminal:
+
+```powershell
+Set-Location .\frontend
+npm install
+npm run dev -- --host localhost
 ```
 
 Open the local URL displayed in your terminal, usually:
@@ -151,6 +166,7 @@ Open the local URL displayed in your terminal, usually:
 
 - Confirm that the Laravel backend starts successfully.
 - Confirm that the frontend opens in the browser.
+- Confirm that `http://localhost:8000/api/pedals` responds (the public pedal catalog route is a quick backend/API check).
 - Check that the frontend can communicate with the backend API.
 - Test registration and login.
 - Test pedal, pedalboard, and rig preset features.

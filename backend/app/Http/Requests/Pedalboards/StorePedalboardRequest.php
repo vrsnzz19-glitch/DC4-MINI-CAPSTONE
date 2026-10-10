@@ -19,6 +19,8 @@ class StorePedalboardRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:150'],
             'description' => ['sometimes', 'nullable', 'string'],
+            'pedals' => ['sometimes', 'array'],
+            'pedals.*' => ['integer', 'distinct', 'exists:pedals,id'],
         ];
     }
 }

@@ -38,7 +38,24 @@ class PedalboardController extends Controller
     {
         $this->authorize('create', Pedalboard::class);
 
-        $board = $request->user()->pedalboards()->create($request->validated());
+        $data = $request->validated();
+        $pedalIds = $data['pedals'] ?? [];
+        unset($data['pedals']);
+
+        $board = DB::transaction(function () use ($request, $data, $pedalIds): Pedalboard {
+            $pedalboard = $request->user()->pedalboards()->create($data);
+            $orderedPedals = [];
+
+            foreach ($pedalIds as $index => $pedalId) {
+                $orderedPedals[$pedalId] = ['position' => $index + 1];
+            }
+
+            if ($orderedPedals) {
+                $pedalboard->pedals()->attach($orderedPedals);
+            }
+
+            return $pedalboard;
+        });
         $board->load(['user:id,name', 'pedals.category']);
 
         return PedalboardResource::make($board)->response()->setStatusCode(201);

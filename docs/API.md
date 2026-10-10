@@ -42,7 +42,7 @@ All pedalboard endpoints require Sanctum authentication. Users list, read, creat
 | Method | Path | Purpose |
 | --- | --- | --- |
 | GET | `/api/pedalboards` | Paginated boards; admin sees all, user sees own |
-| POST | `/api/pedalboards` | Create an owned board (`name`, optional `description`) |
+| POST | `/api/pedalboards` | Create an owned board (`name`, optional `description`, optional ordered `pedals` ID array) |
 | GET | `/api/pedalboards/{id}` | Read board with ordered pedals and owner |
 | PUT | `/api/pedalboards/{id}` | Update board name/description |
 | DELETE | `/api/pedalboards/{id}` | Delete owned board; linked presets are detached by the database |
@@ -50,7 +50,7 @@ All pedalboard endpoints require Sanctum authentication. Users list, read, creat
 | PUT | `/api/pedalboards/{id}/pedals/{pedalId}` | Update relationship `position`, `settings`, and/or `notes` |
 | DELETE | `/api/pedalboards/{id}/pedals/{pedalId}` | Remove a pedal and compact remaining positions |
 
-Pedal positions are one-based and contiguous. Adding at a position inserts the pedal there and shifts later pedals. The relationship data is stored in `pedalboard_pedals`.
+Pedal positions are one-based and contiguous. When creating a board, the optional `pedals` array attaches its pedal IDs in the supplied order. Adding a pedal later at a position inserts it there and shifts later pedals. The relationship data is stored in `pedalboard_pedals`.
 
 ## Rig presets
 

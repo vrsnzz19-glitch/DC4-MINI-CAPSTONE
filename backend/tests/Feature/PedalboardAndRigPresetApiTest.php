@@ -21,6 +21,8 @@ class PedalboardAndRigPresetApiTest extends TestCase
         $other = User::factory()->create();
         $ownerBoard = Pedalboard::factory()->create(['user_id' => $owner->id, 'name' => 'Owner Board']);
         $otherBoard = Pedalboard::factory()->create(['user_id' => $other->id, 'name' => 'Other Board']);
+        $category = PedalCategory::factory()->create();
+        $pedals = Pedal::factory()->count(2)->create(['pedal_category_id' => $category->id]);
         $this->getJson('/api/pedalboards')->assertUnauthorized();
         Sanctum::actingAs($owner);
 
@@ -35,13 +37,18 @@ class PedalboardAndRigPresetApiTest extends TestCase
         $createResponse = $this->postJson('/api/pedalboards', [
             'name' => 'New Board',
             'description' => 'A board for live shows.',
+            'pedals' => [$pedals[1]->id, $pedals[0]->id],
             'user_id' => $other->id,
         ]);
 
         $createResponse
             ->assertCreated()
             ->assertJsonPath('data.owner.id', $owner->id)
-            ->assertJsonPath('data.name', 'New Board');
+            ->assertJsonPath('data.name', 'New Board')
+            ->assertJsonPath('data.pedals.0.id', $pedals[1]->id)
+            ->assertJsonPath('data.pedals.0.pivot.position', 1)
+            ->assertJsonPath('data.pedals.1.id', $pedals[0]->id)
+            ->assertJsonPath('data.pedals.1.pivot.position', 2);
         $newBoardId = $createResponse->json('data.id');
 
         $this->getJson("/api/pedalboards/{$ownerBoard->id}")
@@ -61,6 +68,21 @@ class PedalboardAndRigPresetApiTest extends TestCase
             ->assertJsonPath('meta.total', 2);
         $this->getJson("/api/pedalboards/{$ownerBoard->id}")->assertOk();
         $this->putJson("/api/pedalboards/{$ownerBoard->id}", ['name' => 'Admin cannot edit other owner'])->assertForbidden();
+    }
+
+    public function test_pedalboard_creation_rejects_invalid_pedal_ids_without_creating_a_partial_board(): void
+    {
+        $owner = User::factory()->create();
+        Sanctum::actingAs($owner);
+
+        $this->postJson('/api/pedalboards', [
+            'name' => 'Invalid Rig',
+            'pedals' => [999999],
+        ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('pedals.0');
+
+        $this->assertDatabaseMissing('pedalboards', ['name' => 'Invalid Rig', 'user_id' => $owner->id]);
     }
 
     public function test_pedalboard_pedals_can_be_added_reordered_updated_and_removed(): void
