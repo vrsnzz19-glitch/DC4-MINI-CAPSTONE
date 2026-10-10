@@ -7,6 +7,7 @@ import useNotice from './hooks/useNotice'
 import apiClient from './services/apiClient'
 import UserLayout from './layouts/UserLayout'
 import { AdminRoute, ProtectedRoute } from './components/ProtectedRoute'
+import { EmptyState, ErrorMessage, LoadingSpinner } from './components/ui'
 import { PedalDetailPage, PedalLibraryPage } from './pages/PedalLibraryPage'
 import { AdminCategoriesPage, AdminPedalsPage } from './pages/AdminCatalogPages'
 import {
@@ -141,20 +142,20 @@ function AppFrame() {
 }
 
 function Dashboard({ navigate }) {
+  const { user } = useAuth()
   const [catalogPedals, setCatalogPedals] = useState([])
-  const [pedalCount, setPedalCount] = useState(0)
-  const [pedalboardCount, setPedalboardCount] = useState(null)
-  const [pedalboardError, setPedalboardError] = useState('')
+  const [stats, setStats] = useState(null)
+  const [statsError, setStatsError] = useState('')
+  const [statsLoading, setStatsLoading] = useState(true)
+  const [statsRetry, setStatsRetry] = useState(0)
   const [isLoadingPedals, setIsLoadingPedals] = useState(true)
   const [pedalError, setPedalError] = useState('')
+  const [pedalRetry, setPedalRetry] = useState(0)
 
   useEffect(() => {
     const controller = new AbortController()
     apiClient.get('/pedals', { params: { per_page: 4 }, signal: controller.signal })
-      .then((response) => {
-        setCatalogPedals(response.data.data)
-        setPedalCount(response.data.meta.total)
-      })
+      .then((response) => setCatalogPedals(response.data.data))
       .catch((error) => {
         if (!controller.signal.aborted) setPedalError(error.response?.data?.message || 'Unable to load recent pedals.')
       })
@@ -162,28 +163,65 @@ function Dashboard({ navigate }) {
         if (!controller.signal.aborted) setIsLoadingPedals(false)
       })
     return () => controller.abort()
-  }, [])
+  }, [pedalRetry])
 
   useEffect(() => {
     const controller = new AbortController()
-    apiClient.get('/pedalboards', { params: { page: 1 }, signal: controller.signal })
-      .then((response) => setPedalboardCount(response.data.meta.total))
+    apiClient.get('/dashboard', { signal: controller.signal })
+      .then((response) => {
+        setStats(response.data.data)
+        setStatsError('')
+      })
       .catch((error) => {
-        if (!controller.signal.aborted) setPedalboardError(error.response?.data?.message || 'Unable to load your pedalboards.')
+        if (!controller.signal.aborted) setStatsError(error.response?.data?.message || 'Unable to load dashboard statistics.')
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setStatsLoading(false)
       })
     return () => controller.abort()
-  }, [])
+  }, [statsRetry])
+
+  const hour = new Date().getHours()
+  const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
+  const formattedDate = new Intl.DateTimeFormat(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }).format(new Date())
+  const displayName = user.name.trim().split(/\s+/)[0]
 
   return <>
-    <div className="welcome-banner"><div className="welcome-copy"><span className="eyebrow banner-eyebrow">THURSDAY, OCTOBER 08, 2026</span><h1>Good evening, Alex <span>✳</span></h1><p>Your sound is taking shape. Ready to find your next tone?</p><Button variant="cream" icon="arrow" onClick={() => navigate('/pedalboards')}>View your pedalboards <Icon name="arrow" size={15} /></Button></div><div className="welcome-art"><span className="orbit orbit-one" /><span className="orbit orbit-two" /><div className="hero-pedal"><span>TV</span><i /><small>TONEVAULT</small></div><div className="art-spark spark-one">✳</div><div className="art-spark spark-two">✦</div></div></div>
-    <div className="dashboard-section-top"><div><span className="eyebrow">YOUR STUDIO</span><h2>At a glance</h2></div><span className="updated-label"><i /> Updated just now</span></div>
+    <div className="welcome-banner"><div className="welcome-copy"><span className="eyebrow banner-eyebrow">{formattedDate}</span><h1>{greeting}, {displayName} <span>✳</span></h1><p>Your sound is taking shape. Ready to find your next tone?</p><Button variant="cream" icon="arrow" onClick={() => navigate('/pedalboards')}>View your pedalboards <Icon name="arrow" size={15} /></Button></div><div className="welcome-art"><span className="orbit orbit-one" /><span className="orbit orbit-two" /><div className="hero-pedal"><span>TV</span><i /><small>TONEVAULT</small></div><div className="art-spark spark-one">✳</div><div className="art-spark spark-two">✦</div></div></div>
+    <div className="dashboard-section-top"><div><span className="eyebrow">YOUR STUDIO</span><h2>At a glance</h2></div><span className="updated-label"><i /> Live studio data</span></div>
+    {statsError && <ErrorMessage onRetry={() => { setStatsLoading(true); setStatsRetry((value) => value + 1) }}>{statsError}</ErrorMessage>}
+    {statsLoading && <LoadingSpinner label="Loading studio statistics..." />}
     <div className="stats-grid">
-      <StatCard label="Total pedals" number={isLoadingPedals ? '—' : pedalCount} note="In your library" icon="pedal" trend="Browse catalog" tone="orange" />
-      <StatCard label="My pedalboards" number={pedalboardCount ?? '—'} note={pedalboardError ? 'Unable to load boards' : 'Across your studio'} icon="board" trend="View all" tone="purple" />
-      <StatCard label="Rig presets" number="5" note="Tone recipes saved" icon="preset" trend="2 approved" tone="green" />
+      <StatCard label="Total pedals" number={statsLoading ? '—' : stats?.total_pedals ?? '—'} note="In the catalog" icon="pedal" trend="Browse catalog" tone="orange" />
+      <StatCard label="My pedalboards" number={statsLoading ? '—' : stats?.total_pedalboards ?? '—'} note="Across your studio" icon="board" trend="View all" tone="purple" />
+      <StatCard label="Rig presets" number={statsLoading ? '—' : stats?.total_rig_presets ?? '—'} note="Tone recipes saved" icon="preset" trend="View presets" tone="green" />
       <Card className="quote-card"><span className="quote-mark">“</span><p>Tone is in the fingers,<br />but the pedals help.</p><span>— every guitarist, eventually</span><div className="quote-wave">〰〰〰〰〰〰〰</div></Card>
     </div>
-    <div className="dashboard-columns"><Card className="recent-card"><div className="card-heading"><div><span className="eyebrow">RECENTLY IN YOUR LIBRARY</span><h2>Popular pedals</h2></div><button className="text-link" onClick={() => navigate('/pedals')}>View library <Icon name="arrow" size={14} /></button></div>{pedalError ? <p className="muted" role="alert">{pedalError}</p> : isLoadingPedals ? <div className="mini-library-loading" role="status">Loading pedals...</div> : catalogPedals.length ? <div className="mini-library">{catalogPedals.map((pedal) => <div className="mini-library-row" key={pedal.id}><div className="library-icon pedal-black">{(pedal.model || pedal.name).slice(0, 2).toUpperCase()}</div><div><b>{pedal.name}</b><span>{pedal.brand} · {pedal.category?.name || pedal.type}</span></div><Icon name="chevron" size={16} /></div>)}</div> : <p className="muted">No pedals in the catalog yet.</p>}</Card><Card className="quick-card"><span className="eyebrow">MAKE SOME NOISE</span><h2>Quick actions</h2><p>Jump back into your creative flow.</p><button className="quick-action" onClick={() => navigate('/pedals')}><span className="quick-icon"><Icon name="search" /></span><span><b>Browse pedals</b><small>Find your next sound</small></span><Icon name="arrow" size={16} /></button><button className="quick-action" onClick={() => navigate('/pedalboards/create')}><span className="quick-icon"><Icon name="plus" /></span><span><b>Create pedalboard</b><small>Build a new signal chain</small></span><Icon name="arrow" size={16} /></button><button className="quick-action" onClick={() => navigate('/rig-presets')}><span className="quick-icon"><Icon name="preset" /></span><span><b>View rig presets</b><small>Explore your tone recipes</small></span><Icon name="arrow" size={16} /></button></Card></div>
+    <div className="dashboard-columns">
+      <Card className="recent-card">
+        <div className="card-heading">
+          <div><span className="eyebrow">FROM THE PEDAL LIBRARY</span><h2>Pedals to explore</h2></div>
+          <button className="text-link" onClick={() => navigate('/pedals')}>View library <Icon name="arrow" size={14} /></button>
+        </div>
+        {pedalError
+          ? <ErrorMessage onRetry={() => {
+            setPedalError('')
+            setIsLoadingPedals(true)
+            setPedalRetry((value) => value + 1)
+          }}>{pedalError}</ErrorMessage>
+          : isLoadingPedals
+            ? <div className="mini-library-loading" role="status">Loading pedals...</div>
+            : catalogPedals.length
+              ? <div className="mini-library">{catalogPedals.map((pedal) => <div className="mini-library-row" key={pedal.id}><div className="library-icon pedal-black">{(pedal.model || pedal.name).slice(0, 2).toUpperCase()}</div><div><b>{pedal.name}</b><span>{pedal.brand} · {pedal.category?.name || pedal.type}</span></div><Icon name="chevron" size={16} /></div>)}</div>
+              : <EmptyState title="No pedals in the catalog" message="Browse the library when pedals are available." action={<Button onClick={() => navigate('/pedals')}>Open pedal library</Button>} />}
+      </Card>
+      <Card className="quick-card">
+        <span className="eyebrow">MAKE SOME NOISE</span><h2>Quick actions</h2><p>Jump back into your creative flow.</p>
+        <button className="quick-action" onClick={() => navigate('/pedals')}><span className="quick-icon"><Icon name="search" /></span><span><b>Browse pedals</b><small>Find your next sound</small></span><Icon name="arrow" size={16} /></button>
+        <button className="quick-action" onClick={() => navigate('/pedalboards/create')}><span className="quick-icon"><Icon name="plus" /></span><span><b>Create pedalboard</b><small>Build a new signal chain</small></span><Icon name="arrow" size={16} /></button>
+        <button className="quick-action" onClick={() => navigate('/rig-presets/create')}><span className="quick-icon"><Icon name="preset" /></span><span><b>Create rig preset</b><small>Save your signature tone</small></span><Icon name="arrow" size={16} /></button>
+      </Card>
+    </div>
   </>
 }
 

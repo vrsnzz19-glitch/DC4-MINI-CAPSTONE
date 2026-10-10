@@ -5,9 +5,9 @@
 
 ## Theme Description
 
-ToneVault is a web-based system designed for guitarists who want to organize their guitar effects pedals, create virtual pedalboards, and save their guitar rig configurations in one place.
+ToneVault is a web-based system designed for guitarists who want to organize their guitar effects pedals, create virtual pedalboards, and also save their guitar rig configurations in one place.
 
-The system uses a dark music-inspired interface with a modern dashboard. It helps guitarists manage their pedal collection, arrange pedals in a signal chain, save pedal settings, and submit rig presets for administrator review.
+The system uses a dark music-inspired interface with a modern dashboard. to helps guitarists manage their pedal collection, and arrange pedals in a signal chain, also save pedal settings, and last submit rig presets for administrator review.
 
 ## Features
 
@@ -169,7 +169,6 @@ Use the credentials below only if you create matching accounts in your database 
 
 ## YouTube Learning References
 
-The following links open YouTube search results for tutorials relevant to the technologies used in ToneVault.
 
 1. **Laravel REST API Tutorial**  
    https://www.youtube.com/results?search_query=Laravel+REST+API+CRUD+tutorial
