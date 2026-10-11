@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "ad70de7a-e30b-4b41-9ee7-6da10891b093",
     "name": "ToneVault API",
-    "description": "Authentication, catalog, pedalboard, relationship, and rig preset workflows.",
+    "description": "Requests for authentication, the public pedal catalog, authenticated pedalboard CRUD, and the rig preset workflow. Set base_url to the backend origin (for example http://localhost:8000). Login/register requests capture the response token into the token collection variable. Preset approval requires an administrator token and must be performed by an administrator other than the preset owner.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -17,28 +17,54 @@
   },
   "variable": [
     {
-      "key": "baseUrl",
-      "value": "http://localhost:8000"
+      "key": "base_url",
+      "value": "http://localhost:8000",
+      "type": "string"
     },
     {
       "key": "token",
-      "value": ""
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "guitarist_email",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "guitarist_password",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "admin_email",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "admin_password",
+      "value": "",
+      "type": "string"
     },
     {
       "key": "categoryId",
-      "value": "1"
+      "value": "1",
+      "type": "string"
     },
     {
       "key": "pedalId",
-      "value": "1"
+      "value": "1",
+      "type": "string"
     },
     {
       "key": "pedalboardId",
-      "value": "1"
+      "value": "",
+      "type": "string"
     },
     {
       "key": "rigPresetId",
-      "value": "1"
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
@@ -46,39 +72,32 @@
       "name": "Authentication",
       "item": [
         {
-          "name": "Register",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\"name\":\"ToneVault User\",\"email\":\"guitarist@example.test\",\"password\":\"SecureToneVault123!\",\"password_confirmation\":\"SecureToneVault123!\"}"
-            },
-            "url": "{{baseUrl}}/api/register"
-          }
-        },
-        {
-          "name": "Login as Admin (saves token)",
+          "name": "Register guitarist",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "const body = pm.response.json();",
-                  "if (body.token) pm.collectionVariables.set('token', body.token);"
+                  "if (pm.response.code === 201) {",
+                  "  const body = pm.response.json();",
+                  "  if (body.token) pm.collectionVariables.set('token', body.token);",
+                  "  if (body.user && body.user.email) pm.collectionVariables.set('guitarist_email', body.user.email);",
+                  "}"
                 ]
               }
             }
           ],
           "request": {
             "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
             "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
               {
                 "key": "Content-Type",
                 "value": "application/json"
@@ -86,143 +105,199 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"email\":\"admin@tonevault.test\",\"password\":\"ToneVaultAdmin!2026\"}"
+              "raw": "{\n  \"name\": \"ToneVault Guitarist\",\n  \"email\": \"guitarist-{{$timestamp}}@example.test\",\n  \"password\": \"{{guitarist_password}}\",\n  \"password_confirmation\": \"{{guitarist_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
-            "url": "{{baseUrl}}/api/login"
+            "url": "{{base_url}}/api/register",
+            "description": "Creates a regular user. Set guitarist_password before sending. A unique email is generated for each request."
+          }
+        },
+        {
+          "name": "Login guitarist (saves token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const body = pm.response.json();",
+                  "  if (body.token) pm.collectionVariables.set('token', body.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{guitarist_email}}\",\n  \"password\": \"{{guitarist_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{base_url}}/api/login",
+            "description": "Set guitarist_email and guitarist_password, then send. The returned bearer token replaces the collection token."
+          }
+        },
+        {
+          "name": "Login administrator (saves token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const body = pm.response.json();",
+                  "  if (body.token) pm.collectionVariables.set('token', body.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{admin_email}}\",\n  \"password\": \"{{admin_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{base_url}}/api/login",
+            "description": "Set admin_email and admin_password for an administrator account. Use this before approve/archive requests; it replaces the token with the administrator token."
           }
         },
         {
           "name": "Current user",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/user"
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/user"
           }
         },
         {
           "name": "Logout",
           "request": {
             "method": "POST",
-            "url": "{{baseUrl}}/api/logout"
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/logout"
           }
         }
       ]
     },
     {
-      "name": "Pedals",
+      "name": "Pedal catalog",
       "item": [
         {
-          "name": "List pedals (search and filters)",
+          "name": "List pedals",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/pedals?search=BOSS&category=Overdrive&type=Overdrive&status=active&page=1"
-          }
-        },
-        {
-          "name": "Create pedal (admin)",
-          "request": {
-            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
             "header": [
               {
-                "key": "Content-Type",
+                "key": "Accept",
                 "value": "application/json"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\"pedal_category_id\":{{categoryId}},\"name\":\"Blues Driver BD-2\",\"brand\":\"BOSS\",\"model\":\"BD-2\",\"type\":\"Overdrive\",\"price\":119.99,\"status\":\"active\"}"
+            "url": "{{base_url}}/api/pedals?search=BOSS&page=1",
+            "description": "Public catalog endpoint. Optional query parameters include search, category, type, status, and page."
+          }
+        },
+        {
+          "name": "Get pedal filters",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
             },
-            "url": "{{baseUrl}}/api/pedals"
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/pedal-filters"
           }
         },
         {
           "name": "Get pedal",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/pedals/{{pedalId}}"
-          }
-        },
-        {
-          "name": "Update pedal (admin)",
-          "request": {
-            "method": "PUT",
+            "auth": {
+              "type": "noauth"
+            },
             "header": [
               {
-                "key": "Content-Type",
+                "key": "Accept",
                 "value": "application/json"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\"status\":\"inactive\"}"
-            },
-            "url": "{{baseUrl}}/api/pedals/{{pedalId}}"
+            "url": "{{base_url}}/api/pedals/{{pedalId}}"
           }
         },
-        {
-          "name": "Delete pedal (admin)",
-          "request": {
-            "method": "DELETE",
-            "url": "{{baseUrl}}/api/pedals/{{pedalId}}"
-          }
-        }
-      ]
-    },
-    {
-      "name": "Categories",
-      "item": [
         {
           "name": "List categories",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/categories"
-          }
-        },
-        {
-          "name": "Create category (admin)",
-          "request": {
-            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
             "header": [
               {
-                "key": "Content-Type",
+                "key": "Accept",
                 "value": "application/json"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\"name\":\"Ambient\",\"description\":\"Spatial effects.\"}"
-            },
-            "url": "{{baseUrl}}/api/categories"
-          }
-        },
-        {
-          "name": "Get category",
-          "request": {
-            "method": "GET",
-            "url": "{{baseUrl}}/api/categories/{{categoryId}}"
-          }
-        },
-        {
-          "name": "Update category (admin)",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\"description\":\"Ambient and spacious effects.\"}"
-            },
-            "url": "{{baseUrl}}/api/categories/{{categoryId}}"
-          }
-        },
-        {
-          "name": "Delete empty category (admin)",
-          "request": {
-            "method": "DELETE",
-            "url": "{{baseUrl}}/api/categories/{{categoryId}}"
+            "url": "{{base_url}}/api/categories"
           }
         }
       ]
@@ -234,14 +309,38 @@
           "name": "List my pedalboards",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/pedalboards"
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/pedalboards"
           }
         },
         {
-          "name": "Create pedalboard",
+          "name": "Create pedalboard (saves ID)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const body = pm.response.json();",
+                  "  if (body.data && body.data.id) pm.collectionVariables.set('pedalboardId', String(body.data.id));",
+                  "}"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
               {
                 "key": "Content-Type",
                 "value": "application/json"
@@ -249,16 +348,28 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"name\":\"Weekend Board\",\"description\":\"A compact live setup.\"}"
+              "raw": "{\n  \"name\": \"Weekend Board\",\n  \"description\": \"A compact live setup.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
-            "url": "{{baseUrl}}/api/pedalboards"
+            "url": "{{base_url}}/api/pedalboards",
+            "description": "Requires guitarist authentication. Saves the returned board ID to pedalboardId."
           }
         },
         {
           "name": "Get pedalboard",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/pedalboards/{{pedalboardId}}"
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/pedalboards/{{pedalboardId}}"
           }
         },
         {
@@ -267,22 +378,9 @@
             "method": "PUT",
             "header": [
               {
-                "key": "Content-Type",
+                "key": "Accept",
                 "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\"name\":\"Updated Weekend Board\"}"
-            },
-            "url": "{{baseUrl}}/api/pedalboards/{{pedalboardId}}"
-          }
-        },
-        {
-          "name": "Add pedal to board",
-          "request": {
-            "method": "POST",
-            "header": [
+              },
               {
                 "key": "Content-Type",
                 "value": "application/json"
@@ -290,59 +388,65 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"pedal_id\":{{pedalId}},\"position\":1,\"settings\":{\"level\":8,\"tone\":5},\"notes\":\"Lead boost.\"}"
-            },
-            "url": "{{baseUrl}}/api/pedalboards/{{pedalboardId}}/pedals"
-          }
-        },
-        {
-          "name": "Update pedal position/settings/notes",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
+              "raw": "{\n  \"name\": \"Updated Weekend Board\",\n  \"description\": \"Updated board notes.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
               }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\"position\":2,\"settings\":{\"mix\":0.4},\"notes\":\"Move after drive.\"}"
             },
-            "url": "{{baseUrl}}/api/pedalboards/{{pedalboardId}}/pedals/{{pedalId}}"
-          }
-        },
-        {
-          "name": "Remove pedal from board",
-          "request": {
-            "method": "DELETE",
-            "url": "{{baseUrl}}/api/pedalboards/{{pedalboardId}}/pedals/{{pedalId}}"
+            "url": "{{base_url}}/api/pedalboards/{{pedalboardId}}"
           }
         },
         {
           "name": "Delete pedalboard",
           "request": {
             "method": "DELETE",
-            "url": "{{baseUrl}}/api/pedalboards/{{pedalboardId}}"
+            "url": "{{base_url}}/api/pedalboards/{{pedalboardId}}",
+            "description": "Deletes the board identified by pedalboardId. Run after any requests that use the board."
           }
         }
       ]
     },
     {
-      "name": "Rig presets",
+      "name": "Rig presets workflow",
       "item": [
         {
           "name": "List my presets",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/rig-presets"
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/rig-presets"
           }
         },
         {
-          "name": "Create draft preset",
+          "name": "Create Draft preset (saves ID)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const body = pm.response.json();",
+                  "  if (body.data && body.data.id) pm.collectionVariables.set('rigPresetId', String(body.data.id));",
+                  "}"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
               {
                 "key": "Content-Type",
                 "value": "application/json"
@@ -350,23 +454,39 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"name\":\"Studio Clean\",\"pedalboard_id\":{{pedalboardId}},\"description\":\"Wide clean tone.\",\"amp_settings\":{\"gain\":3,\"bass\":5,\"middle\":6,\"treble\":5},\"guitar\":\"Fender Stratocaster\",\"tuning\":\"E Standard\"}"
+              "raw": "{\n  \"name\": \"Studio Clean\",\n  \"pedalboard_id\": {{pedalboardId}},\n  \"description\": \"Wide clean tone.\",\n  \"amp_settings\": {\n    \"gain\": 3,\n    \"bass\": 5,\n    \"middle\": 6,\n    \"treble\": 5\n  },\n  \"guitar\": \"Fender Stratocaster\",\n  \"tuning\": \"E Standard\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
-            "url": "{{baseUrl}}/api/rig-presets"
+            "url": "{{base_url}}/api/rig-presets",
+            "description": "Creates a preset in Draft status. Run Create pedalboard first or replace pedalboard_id with null or an owned board ID. Saves the returned preset ID."
           }
         },
         {
           "name": "Get preset",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/rig-presets/{{rigPresetId}}"
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/rig-presets/{{rigPresetId}}"
           }
         },
         {
-          "name": "Update own preset",
+          "name": "Update own preset (remains Draft)",
           "request": {
             "method": "PUT",
             "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
               {
                 "key": "Content-Type",
                 "value": "application/json"
@@ -374,37 +494,65 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"description\":\"Updated clean tone.\"}"
+              "raw": "{\n  \"description\": \"Updated clean tone.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
-            "url": "{{baseUrl}}/api/rig-presets/{{rigPresetId}}"
+            "url": "{{base_url}}/api/rig-presets/{{rigPresetId}}",
+            "description": "Editing a Submitted or Approved preset as its owner returns it to Draft."
           }
         },
         {
-          "name": "Submit own preset",
+          "name": "Submit Draft preset",
           "request": {
             "method": "POST",
-            "url": "{{baseUrl}}/api/rig-presets/{{rigPresetId}}/submit"
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/rig-presets/{{rigPresetId}}/submit",
+            "description": "As the preset owner, transitions Draft to Submitted. The preset must be Draft."
           }
         },
         {
-          "name": "Approve another user's preset (admin)",
+          "name": "Approve Submitted preset (administrator)",
           "request": {
             "method": "POST",
-            "url": "{{baseUrl}}/api/rig-presets/{{rigPresetId}}/approve"
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/rig-presets/{{rigPresetId}}/approve",
+            "description": "Login as an administrator first. Transitions Submitted to Approved; the administrator cannot approve their own preset."
           }
         },
         {
-          "name": "Archive preset (admin)",
+          "name": "Archive preset (administrator)",
           "request": {
             "method": "POST",
-            "url": "{{baseUrl}}/api/rig-presets/{{rigPresetId}}/archive"
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/rig-presets/{{rigPresetId}}/archive",
+            "description": "Login as an administrator first. Transitions a non-Archived preset to Archived."
           }
         },
         {
-          "name": "Delete own draft/submitted preset",
+          "name": "Delete own non-Archived preset",
           "request": {
             "method": "DELETE",
-            "url": "{{baseUrl}}/api/rig-presets/{{rigPresetId}}"
+            "url": "{{base_url}}/api/rig-presets/{{rigPresetId}}",
+            "description": "A guitarist may delete their own Draft, Submitted, or Approved preset, but not an Archived preset."
           }
         }
       ]

@@ -13,7 +13,7 @@ The API is served under `/api`. JSON validation failures return `422`, missing o
 
 Send protected requests with `Authorization: Bearer <token>`. Public registration always creates a regular user; it cannot grant admin access.
 
-The API allows browser requests from the frontend origin configured by `FRONTEND_URL` (default `http://127.0.0.1:5173`) and `http://localhost:5173`. The React app defaults to `http://127.0.0.1:8000/api`; override it with `VITE_API_URL` when the API is hosted elsewhere.
+The API allows browser requests from the frontend origin configured by `FRONTEND_URL` (default `http://127.0.0.1:5173`) and `http://localhost:5173`. The React app defaults to `http://127.0.0.1:8000/api`; override it with `VITE_API_BASE_URL` when the API is hosted elsewhere. `VITE_API_URL` remains supported for existing local configurations.
 
 ## Pedals and categories
 
