@@ -6,9 +6,11 @@
 
 ## Client and context
 
-The proposed client is a local guitar player or music group that uses guitar
-effects pedals in rehearsals and performances. Members need a shared, dependable
-way to keep track of their pedals and repeat useful sound setups.
+The proposed client is a local music school, guitar studio, or guitar
+instructor that uses guitar effects pedals in rehearsals and performances.
+[CLIENT_NAME_PLACEHOLDER] — replace with the confirmed client name once
+provided. Members need a shared, dependable way to keep track of their
+pedals and repeat useful sound setups.
 
 ## Problem statement
 

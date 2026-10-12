@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\PedalboardController;
 use App\Http\Controllers\Api\PedalCategoryController;
 use App\Http\Controllers\Api\PedalController;
 use App\Http\Controllers\Api\RigPresetController;
+use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/register', [AuthController::class, 'register']);
@@ -38,6 +39,9 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function (): void {
     Route::post('/categories', [PedalCategoryController::class, 'store']);
     Route::put('/categories/{category}', [PedalCategoryController::class, 'update']);
     Route::delete('/categories/{category}', [PedalCategoryController::class, 'destroy']);
+
+    Route::get('/users', [UserController::class, 'index']);
+    Route::get('/users/{user}', [UserController::class, 'show']);
 });
 
 Route::middleware('auth:sanctum')->group(function (): void {

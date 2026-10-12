@@ -1,285 +1,139 @@
-# ToneVault — Guitar Effects Pedalboard Rig Setup
+# ToneVault — Guitar Rig & Pedalboard Management System
 
-ToneVault is a web application for guitarists to explore guitar effects pedals, arrange pedals into virtual pedalboards, and save guitar and amplifier settings as reusable rig presets. Administrators maintain the shared pedal catalog and review submitted presets.
+ToneVault is a decoupled web application with a React single-page frontend and a Laravel REST API backed by MySQL. Guitarists can browse a catalog of effects pedals, assemble ordered pedalboards, save reusable rig presets, and submit rigs for administrator review. Administrators maintain the pedal catalog, manage categories, and review submitted rig presets.
 
-## Developer
-
-- **Developer:** Iverson Loquere
-- **Course:** BSIT – Section 2
-
-## Client / Theme
-
-ToneVault is designed for guitarists who want a convenient way to organize their effects collection and plan tones for practice, recording, or live performance. Its dark, music-inspired interface presents pedal and rig information in a focused workspace.
-
-## Problem Statement
-
-Guitarists may keep pedal inventories, signal-chain plans, amp settings, and tone notes in separate documents or rely on memory. This makes it difficult to keep setups organized, compare configurations, and retrieve a rig when preparing for a session or performance. A shared catalog also needs a controlled way to maintain consistent pedal and category information.
-
-## Solution
-
-ToneVault combines a searchable pedal catalog with personal pedalboards and rig presets in one application. A guitarist can create an ordered signal chain, record settings and notes, and submit a preset for review. Administrators manage the catalog and review submissions. Laravel exposes a JSON API, and the React single-page application consumes it.
-
-## Features
-
-### Guitarist
-
-- Register and sign in with token-based authentication.
-- Browse and filter the pedal catalog and its categories.
-- View pedal and category details.
-- Create and manage personal pedalboards.
-- Add, remove, and order pedals on a board.
-- Save per-pedal settings and notes.
-- Create rig presets with optional pedalboard, guitar, tuning, amp settings, and description.
-- Submit presets for administrator review and view their status.
-- Use Gig Mode to view a saved pedalboard with interactive visual controls. These controls are visual only and do not process audio.
-
-### Administrator
-
-- View the dashboard and catalog.
-- Create, update, and delete pedals and categories.
-- View presets across users.
-- Approve submitted presets and archive presets.
-- Use the same authenticated account features available to a guitarist.
-
-## User Roles
-
-| Role | Capabilities |
-| --- | --- |
-| **Guitarist** (`user`) | Manage their own pedalboards and rig presets, browse the catalog, and submit presets for review. |
-| **Administrator** (`admin`) | Manage pedals and categories, review presets across users, and approve or archive presets. |
-
-New public registrations are always assigned the `user` role. Role changes must be performed through trusted administrative or database operations; sending a role in a registration request does not grant administrator access.
+**GigView** (Gig Mode POV) is preserved as a live-performance simulation view for a saved pedalboard, with animated EQ visualizer, footswitch toggles, and volume/gain controls. It is a visual/session-only simulation — ToneVault does not process audio or connect to physical pedal hardware.
 
 ## Technology Stack
 
-The requested project brief names Laravel 11/12, React 18+, Vite, Tailwind CSS, and MySQL. **The current repository checkout differs from parts of that target:** its Composer manifest requires PHP 8.3+ and Laravel 13, its frontend dependencies use React 19 and Vite 8, and its UI is styled with project CSS rather than a Tailwind CSS dependency. It is configured for MySQL/MariaDB. The application code and dependency manifests are authoritative for the versions used by this checkout.
-
-| Area | Technology |
-| --- | --- |
+| Layer | Technology |
+|-------|------------|
 | Backend | PHP 8.3+, Laravel 13, Laravel Sanctum |
 | Frontend | React 19, Vite 8, React Router, Axios |
-| Styling | Project CSS |
-| Database | MySQL or MariaDB |
-| Testing | PHPUnit via Laravel's test runner |
+| Database | MySQL / MariaDB |
+| Authentication | Laravel Sanctum bearer tokens |
+| Styling | Project CSS (dark, stage-inspired theme) |
 
-## Architecture
+## Prerequisites
 
-```text
-Browser
-  └── React SPA (Vite)
-       └── Axios JSON requests to /api
-            └── Laravel API
-                 ├── Sanctum bearer-token authentication
-                 ├── API controllers, policies, and admin middleware
-                 └── Eloquent models and MySQL/MariaDB
-```
-
-- The `frontend/` application renders the user interface and sends API requests to the backend.
-- The `backend/` application owns validation, authentication, authorization, business rules, and persistence.
-- Public catalog routes allow unauthenticated browsing. Personal board and preset routes require a valid Sanctum bearer token. Catalog writes and category writes require administrator authorization.
-- The frontend API base address can be set with `VITE_API_BASE_URL` in `frontend/.env`. `VITE_API_URL` is also accepted as a compatibility fallback.
-
-## ERD Description
-
-The database is organized around users, the shared pedal catalog, user-owned boards, and saved presets:
-
-- **users** stores account details and a `role` (`user` or `admin`). A user can own multiple pedalboards and rig presets.
-- **pedal_categories** stores unique catalog category names and descriptions. A category has many pedals.
-- **pedals** stores catalog details such as name, brand, model, type, price, status, and an optional category. Deleting a category that still has pedals is restricted.
-- **pedalboards** belongs to a user and stores a board name, description, and status.
-- **pedalboard_pedals** is the many-to-many join between pedalboards and pedals. It records each pedal's board position, settings, and notes. A pedal can appear on different boards; a pedal cannot occur twice on the same board, and positions are unique per board.
-- **rig_presets** belongs to a user and can optionally reference a pedalboard. It stores the preset name, description, JSON amp settings, guitar, tuning, and workflow status. If the linked board is deleted, the preset remains and its board reference is cleared.
-- **personal_access_tokens** stores Sanctum tokens for API authentication.
-
-In relationship form:
-
-```text
-users 1 ─── * pedalboards
-users 1 ─── * rig_presets
-pedal_categories 1 ─── * pedals
-pedalboards * ─── * pedals       (through pedalboard_pedals)
-pedalboards 1 ─── * rig_presets  (optional reference from each preset)
-users 1 ─── * personal_access_tokens
-```
-
-## Installation and Setup
-
-### Prerequisites
-
-- PHP 8.3 or later with the MySQL PDO extension (`pdo_mysql`) enabled
+- PHP 8.3 or later with required Laravel extensions, including `pdo_mysql`
 - Composer
-- Node.js and npm (use a version supported by Vite 8)
-- MySQL or MariaDB
-- Git
+- Node.js and npm compatible with Vite 8
+- MySQL server
 
-The commands below use PowerShell from the repository root. Replace configuration values as needed for your local database.
+## Setup
 
-### 1. Clone the repository
-
-```powershell
-git clone https://github.com/vrsnzz19-glitch/DC4-MINI-CAPSTONE.git
-Set-Location .\DC4-MINI-CAPSTONE
-```
-
-### 2. Install backend dependencies and configure Laravel
+### 1. Clone and configure the backend
 
 ```powershell
-Set-Location .\backend
+cd backend
 composer install
 Copy-Item .env.example .env
 php artisan key:generate
 ```
 
-Edit `backend/.env` and configure the database. The example uses MySQL and a database named `tonevault`:
+Edit `backend/.env` and set the database connection details (`DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`). The default database name is `tonevault`.
 
-```dotenv
-APP_NAME=ToneVault
-APP_ENV=local
-APP_DEBUG=true
-APP_URL=http://127.0.0.1:8000
-
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=tonevault
-DB_USERNAME=root
-DB_PASSWORD=
-
-FRONTEND_URL=http://localhost:5173
-```
-
-Create the `tonevault` database in MySQL/MariaDB before migrating, or use the provided Windows PowerShell helper from the repository root:
+### 2. Run migrations and seeders
 
 ```powershell
-Set-Location ..
-powershell -ExecutionPolicy Bypass -File .\scripts\setup-database.ps1
+php artisan migrate
 ```
 
-The helper creates the configured database when needed and runs migrations and the default seeder. If the database account requires a password, set it in the local, untracked `backend/.env` before running the helper.
-
-To run the migration and default seed command directly, from `backend/`:
-
-```powershell
-php artisan migrate --seed
-```
-
-The default `DatabaseSeeder` adds a small starter set of categories and pedals. To add the complete sample catalog, pedalboards, rig presets, and local demo accounts, run the dedicated seeder as well:
+To create the demo accounts and the full ToneVault sample catalog:
 
 ```powershell
 php artisan db:seed --class=ToneVaultSeeder
 ```
 
-### 3. Install and configure the frontend
-
-In a new terminal from the repository root:
-
-```powershell
-Set-Location .\frontend
-npm install
-Copy-Item .env.example .env
-```
-
-Set the API URL in `frontend/.env`:
-
-```dotenv
-VITE_API_BASE_URL=http://localhost:8000/api
-```
-
-### 4. Start the development servers
-
-In one terminal, from `backend/`:
+### 3. Start the backend API
 
 ```powershell
 php artisan serve --host=127.0.0.1 --port=8000
 ```
 
-In a second terminal, from `frontend/`:
+### 4. Configure and run the frontend
+
+In a second terminal, from the repository root:
 
 ```powershell
-npm run dev -- --host localhost
+cd frontend
+Copy-Item .env.example .env
+npm install
+npm run dev
 ```
 
-Open the local URL printed by Vite, usually `http://localhost:5173`. The API is available at `http://127.0.0.1:8000/api`.
+The frontend defaults to `http://127.0.0.1:8000/api`. Override with `VITE_API_BASE_URL` if the API is hosted elsewhere. Open the local Vite URL printed in the terminal, usually `http://localhost:5173`.
 
-## Demo Credentials
+## Demo Account Credentials
 
-Running the `ToneVaultSeeder` creates these **local development-only** accounts:
+Run `php artisan db:seed --class=ToneVaultSeeder` from `backend/` to create or refresh these local development accounts:
 
 | Role | Email | Password |
-| --- | --- | --- |
+|------|-------|----------|
 | Guitarist | `guitarist@tonevault.test` | `ToneVaultUser!2026` |
 | Administrator | `admin@tonevault.test` | `ToneVaultAdmin!2026` |
 
-The requested address `guitarist@tonevault.com` is **not** created by the current seeder. Use `guitarist@tonevault.test` with the listed local-only password, or create your own account through registration. Do not use the seeded passwords outside a local development database.
+These credentials come from `backend/database/seeders/ToneVaultSeeder.php` and are for local demonstrations only. Do not use them in a deployed or production environment.
 
-## API Information
+## Available Features
 
-All API routes are prefixed with `/api` and return JSON. Protected routes use a Sanctum bearer token obtained from login or registration:
+### Guitarist
+- Register and sign in using Laravel Sanctum token authentication (registration always creates a `user` role; admin cannot be self-assigned).
+- Browse the pedal catalog, search by name/brand/model, filter by category/type/status, and navigate paginated results.
+- Build and save personal pedalboards with an ordered selection of catalog pedals.
+- Manage board-specific pedal settings and notes.
+- Create and manage rig presets with optional pedalboard, guitar, tuning, amp settings, and description.
+- Submit rig presets for administrator review and track status (`Draft → Submitted → Approved/Archived`).
+- Open **Gig Mode POV** for a saved pedalboard; toggle visual footswitches and adjust local volume/gain sliders alongside a simulated EQ display and stage audience background.
 
-```http
-Authorization: Bearer <token>
-Accept: application/json
-```
+### Administrator
+- Create, update, and delete catalog pedals and pedal categories.
+- View registered users (paginated).
+- View all rig presets and review submitted presets.
+- Approve or archive presets through the review workflow.
+- View dashboard statistics scoped across all users.
 
-| Method | Endpoint | Access | Purpose |
-| --- | --- | --- | --- |
-| `POST` | `/api/register` | Public | Create a regular user and issue a token |
-| `POST` | `/api/login` | Public | Authenticate and issue a token |
-| `GET` | `/api/pedals` | Public | List/search/filter pedals |
-| `GET` | `/api/pedal-filters` | Public | Get catalog filter values |
-| `GET` | `/api/pedals/{id}` | Public | View a pedal |
-| `GET` | `/api/categories` | Public | List categories |
-| `GET` | `/api/categories/{id}` | Public | View a category |
-| `GET` | `/api/dashboard` | Authenticated | Load dashboard counts and summary |
-| `GET`, `POST`, `PUT`, `DELETE` | `/api/pedalboards` and `/api/pedalboards/{id}` | Authenticated | List and manage owned boards |
-| `POST`, `PUT`, `DELETE` | `/api/pedalboards/{id}/pedals[/{pedalId}]` | Authenticated | Add, update, or remove pedals on a board |
-| `GET`, `POST`, `PUT`, `DELETE` | `/api/rig-presets` and `/api/rig-presets/{id}` | Authenticated | List and manage accessible presets |
-| `POST` | `/api/rig-presets/{id}/submit` | Owner | Submit a draft preset for review |
-| `POST` | `/api/rig-presets/{id}/approve` | Administrator | Approve a submitted preset |
-| `POST` | `/api/rig-presets/{id}/archive` | Administrator | Archive a preset |
-| `POST` | `/api/pedals` | Administrator | Create a catalog pedal |
-| `PUT`, `DELETE` | `/api/pedals/{id}` | Administrator | Update or delete a catalog pedal |
-| `POST` | `/api/categories` | Administrator | Create a category |
-| `PUT`, `DELETE` | `/api/categories/{id}` | Administrator | Update or delete a category |
-| `GET` | `/api/user` | Authenticated | Get the current user |
-| `POST` | `/api/logout` | Authenticated | Revoke the current token |
+## API
 
-Typical API status codes include `200` for successful reads and updates, `201` for creates, `204` for successful deletes, `401` for unauthenticated requests, `403` for forbidden operations, `404` for missing records, and `422` for validation errors. See [docs/API.md](./docs/API.md) for request details and workflow notes.
+All API endpoints are served under `/api` and exchange JSON. Protected endpoints require a `Authorization: Bearer <token>` header issued by Laravel Sanctum.
 
-## Testing and Verification
+See `docs/API.md` for the complete endpoint reference confirmed against `backend/routes/api.php`.
 
-Run backend tests from `backend/`:
+## Project Limitations
+
+- Gig Mode controls (spectrum, audience, sliders, footswitches) are simulated visual/session controls. They do not capture or process live audio, and their settings are not persisted as pedal audio parameters.
+- A manual interactive browser end-to-end test was not performed as part of this documentation update. Backend feature tests, frontend lint, and frontend build all pass.
+- The application is planned for a local music group. Features such as payments, public social networking, marketplace listings, and integrations with physical pedal hardware are outside scope.
+
+## Testing
+
+Backend tests:
 
 ```powershell
+cd backend
 php artisan test
 ```
 
-The test suite uses an in-memory SQLite database as configured in `backend/phpunit.xml`; MySQL is not required for these tests.
+Result: **22 tests passed, 217 assertions**.
 
-Run frontend checks from `frontend/`:
+Frontend lint and build:
 
 ```powershell
+cd frontend
 npm run lint
 npm run build
 ```
 
-There is no `npm test` script in the current frontend package manifest. After starting both development servers, verify the application manually:
+Result: Both pass with no errors.
 
-1. Open the Vite URL and confirm that the application loads without console errors.
-2. Request `http://127.0.0.1:8000/api/pedals` and confirm a JSON catalog response.
-3. Register a new guitarist, sign in, and confirm authenticated pages load.
-4. Create a pedalboard, add multiple pedals, and verify ordering/settings persist after reload.
-5. Create a rig preset, submit it, and verify its status.
-6. Sign in with the local seeded administrator; verify catalog management and preset review.
-7. Try accessing another user's board or modifying catalog data as a non-admin and confirm access is denied.
+## References
 
-## Limitations
-
-- ToneVault stores and displays pedalboard and rig configuration data. It does **not** process guitar audio, emulate effects, or connect to audio hardware.
-- Gig Mode is an interactive visual interface; pedal toggles and controls do not alter a real or simulated audio signal.
-- A database and running backend are needed for persistent application data and API-backed features.
-- Demo credentials and seeded records are intended only for local development.
-
-## AI Disclosure
-
-AI assistance was used to prepare this README. The project documentation was checked against the repository's current dependency manifests, routes, migrations, and seeders; generated descriptions should still be reviewed by the project developer before submission or deployment.
+- `docs/PROJECT_PROPOSAL.md` — Submitted project proposal (client placeholder included).
+- `docs/FEATURE_MATRIX.md` — Nine-feature requirement matrix mapped to actual implementation.
+- `docs/PRESET_WORKFLOW.md` — Draft → Submitted → Approved or Archived workflow.
+- `docs/API.md` — API endpoint reference confirmed against route definitions.
+- `docs/ERD.md` — Database design matching actual migrations.
+- `docs/ARCHITECTURE.md` — System architecture.
+- `docs/CP2-CHECKLIST.md` / `docs/CP3-CHECKLIST.md` — Implementation checklists.
+- `FINAL-AUDIT.md` — Independent audit summary.

@@ -50,12 +50,13 @@ API, not just by hiding frontend links.
   pedalboard.
 - Submit a rig for admin review and display its current status to its owner.
 - Allow admins to review submissions and set a supported status.
-- Proposed statuses: `draft`, `pending`, `approved`, and `rejected`.
-- Proposed flow: a guitarist saves or edits a draft, submits it as `pending`,
-  and an admin changes it to `approved` or `rejected`. A rejected rig can be
-  edited and submitted again.
-- A guitarist cannot set the approval status directly; only the admin review
-  action may change a submitted rig's status.
+- Proposed statuses: `Draft`, `Submitted`, `Approved`, and `Archived`.
+- Proposed flow: a guitarist saves or edits a draft, submits it as
+  `Submitted`, and an admin changes it to `Approved` or `Archived`. An
+  archived rig is read-only. A rejected-equivalent outcome is represented
+  by `Archived`.
+- A guitarist cannot set the approval status directly; only the admin
+  review action may change a submitted rig's status.
 
 ## Dashboard
 

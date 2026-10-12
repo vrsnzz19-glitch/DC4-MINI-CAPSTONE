@@ -107,12 +107,12 @@ created with `$table->timestamps()`.
 | `email` | VARCHAR(255) | No | Unique login email. |
 | `email_verified_at` | TIMESTAMP | Yes | Laravel-compatible verification timestamp. |
 | `password` | VARCHAR(255) | No | Store a secure password hash only. |
-| `role` | VARCHAR(20) | No | Default `guitarist`; values `guitarist` or `admin`; index. |
+| `role` | VARCHAR(20) | No | Default `user`; values `user` or `admin`; index. |
 | `remember_token` | VARCHAR(100) | Yes | Laravel-compatible remember token. |
 | `created_at` | TIMESTAMP | Yes | Creation timestamp. |
 | `updated_at` | TIMESTAMP | Yes | Last update timestamp. |
 
-Registration must assign `guitarist` on the server. A public request must not
+Registration must assign `user` on the server. A public request must not
 be allowed to assign or change its own role.
 
 ### `pedal_categories`
@@ -193,7 +193,7 @@ swapping existing positions.
 | `amp_settings` | JSON | Yes | Optional structured amplifier settings. |
 | `guitar` | VARCHAR(100) | Yes | Optional guitar/instrument description. |
 | `tuning` | VARCHAR(50) | Yes | Optional tuning, e.g. `Drop D`. |
-| `status` | VARCHAR(20) | No | Default `draft`; values `draft`, `pending`, `approved`, `rejected`; index. |
+| `status` | VARCHAR(20) | No | Default `Draft`; values `Draft`, `Submitted`, `Approved`, `Archived`; index. |
 | `created_at` | TIMESTAMP | Yes | Creation timestamp. |
 | `updated_at` | TIMESTAMP | Yes | Last update timestamp. |
 
@@ -223,9 +223,10 @@ inactive instead.
 - `pedals.status`: `active` or `inactive`. Inactive pedals are hidden from
   normal library results but can remain on existing boards.
 - `pedalboards.status`: `active` or `archived`.
-- `rig_presets.status`: `draft`, `pending`, `approved`, or `rejected`.
-  Submission moves an eligible draft/rejected preset to `pending`; only an
-  admin can approve or reject it.
+- `rig_presets.status`: `Draft`, `Submitted`, `Approved`, or `Archived`.
+  Submission moves an eligible `Draft` preset to `Submitted`; only an
+  administrator can approve it (`Submitted → Approved`) or archive it
+  (`→ Archived`). Edits to a non-`Draft` preset return it to `Draft`.
 - Validate non-negative prices, existing foreign-key IDs, valid status values,
   and non-negative/unique board positions.
 - Use Laravel FormRequests for validation and authorization policies for role
