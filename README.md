@@ -5,7 +5,7 @@ ToneVault is a web application for guitarists to explore guitar effects pedals, 
 ## Developer
 
 - **Developer:** Iverson Loquere
-- **Course:** BSIT – Section 2
+- **Course:** BSIT 3 – Section 2
 
 ## Client / Theme
 
@@ -249,7 +249,9 @@ Gig Mode is an interactive visual interface; pedal toggles and controls do not a
 
 A database and running backend are needed for persistent application data and API-backed features.
 
-References
+REFERENCES
+
+
 Laravel Official YouTube Channel. (2024–2026). Laravel Framework Tutorials and Release Guides [Video]. YouTube. https://www.youtube.com/@LaravelPHP
 
 Programming with Mosh. (2023). React Tutorial for Beginners [Video]. YouTube. https://www.youtube.com/@programmingwithmosh
