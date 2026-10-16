@@ -120,6 +120,75 @@
 .status-pedal-status-active { border-color: #3c4a2d; color: #c1e87b; background: #2a3421; }.status-pedal-status-inactive { border-color: #57442f; color: #efbd84; background: #34291f; }
 .pedal-led { position: absolute; top: 28px; right: 26px; width: 5px; height: 5px; border-radius: 50%; background: #d3fb7e; box-shadow: 0 0 9px #c9ee71; }.pedal-footswitch { position: absolute; bottom: 13px; left: calc(50% - 8px); width: 16px; height: 16px; border: 2px solid #ffffff86; border-radius: 50%; background: #ffffff22; box-shadow: 0 2px 5px #0007; }
 .pedal-card-body { padding: 12px 13px 13px; }.pedal-title-row, .board-card-title { display: flex; align-items: start; justify-content: space-between; gap: 8px; }.pedal-title-row h3, .board-card-title h3, .preset-card h3 { margin: 0; color: #e5e6dd; font: 600 13px var(--heading); letter-spacing: -.02em; }.pedal-title-row p { margin: 3px 0 0; color: #888a80; font-size: 10px; }.status-badge { display: inline-flex; min-height: 21px; flex: 0 0 auto; align-items: center; padding: 0 7px; border: 1px solid transparent; border-radius: 20px; font: 500 9px var(--mono); white-space: nowrap; }.status-green { border-color: #3c4a2d; color: #c1e87b; background: #2a3421; }.status-orange { border-color: #57442f; color: #efbd84; background: #34291f; }.status-muted { border-color: #40413a; color: #b0b1a8; background: #282925; }.status-purple { border-color: #4f3e58; color: #cfafea; background: #302637; }.tag-row { display: flex; flex-wrap: wrap; gap: 5px; margin: 10px 0 12px; }.tag { padding: 3px 7px; border: 1px solid #454a36; border-radius: 5px; color: #b9d87d; background: #272b20; font: 9px var(--mono); }.tag-dim { border-color: #383a34; color: #96988d; background: #23241f; }.full-button { width: 100%; min-height: 33px; justify-content: center; }.full-button svg { margin-left: auto; }
+.pedal-card-analog { position: relative; overflow: hidden; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); transition: transform .18s, border-color .18s, box-shadow .18s; display: flex; flex-direction: column; height: 100%; }
+.pedal-card-analog:hover { border-color: #42463a; box-shadow: 0 10px 24px #0004; transform: translateY(-2px); }
+.pedal-chassis { position: relative; display: flex; flex-direction: column; align-items: center; padding: 12px 8px 10px; background: linear-gradient(180deg, #2a2c26, #1e201a); border-bottom: 1px solid #383a32; min-height: 150px; }
+.pedal-jacks { display: flex; justify-content: space-between; width: 64px; margin-bottom: 6px; }
+.pedal-jack { width: 9px; height: 9px; border: 1.5px solid #8a8f80; border-radius: 50%; background: #242620; color: #5c6052; font: 600 6px var(--mono); display: grid; place-items: center; box-shadow: inset 0 0 3px #0004; }
+.pedal-jack-in { border-color: #c9ee71; background: #1c2017; }
+.pedal-jack-out { border-color: #ff4f4f; background: #261a1a; }
+.pedal-brand { margin: 3px 0 8px; color: #f0f0e8; font: 700 10px var(--heading); letter-spacing: .06em; text-transform: uppercase; text-align: center; line-height: 1.2; }
+.pedal-knobs { display: flex; justify-content: center; gap: 8px; width: 100%; margin-bottom: 8px; }
+.pedal-knob-group { display: grid; align-items: center; gap: 2px; }
+.pedal-knob { width: 22px; height: 22px; border-radius: 50%; border: 2px solid #545847; background: linear-gradient(135deg, #44473c, #2e3028); position: relative; box-shadow: inset 0 1px 3px #ffffff22, 0 2px 4px #0006; cursor: pointer; transition: transform .1s; }
+.pedal-knob:active { transform: scale(.92); }
+.pedal-knob::before { content: ''; position: absolute; top: 50%; left: 50%; width: 2px; height: 5px; background: #b9bbb1; transform: translate(-50%, -50%) rotate(var(--knob-rotation)); transform-origin: top center; }
+.pedal-knob::after { content: ''; position: absolute; inset: 2px; border-radius: 50%; border: 1px solid #3a3d32; background: transparent; }
+.pedal-knob-label { color: #85877e; font: 600 7px var(--mono); letter-spacing: .06em; text-transform: uppercase; line-height: 1; }
+.pedal-knob-value { color: var(--accent); font: 700 8px var(--mono); }
+.pedal-led-analog { width: 9px; height: 9px; border-radius: 50%; background: #4a5436; border: 1px solid #6e7851; margin: 5px 0 3px; box-shadow: 0 0 5px #0004; transition: background .2s, box-shadow .2s, border-color .2s; cursor: pointer; }
+.pedal-led-analog.is-on { background: #a3e635; border-color: #c9ee71; box-shadow: 0 0 10px #c9ee71, 0 0 20px #c9ee7180; }
+.pedal-model { color: #e5e6dd; font: 600 9px var(--heading); letter-spacing: .03em; text-transform: uppercase; text-align: center; margin-bottom: 6px; line-height: 1.2; }
+.pedal-footswitch { position: relative; width: 30px; height: 30px; border: 2px solid #8a8f80; border-radius: 50%; background: linear-gradient(145deg, #c4c6bc, #8a8f80); box-shadow: inset 0 2px 4px #ffffff33, 0 3px 6px #0006; margin-top: 5px; }
+.pedal-footswitch-top { position: absolute; inset: 3px; border-radius: 50%; border: 1px solid #a8ac99; background: linear-gradient(145deg, #e4e6da, #b9bbb1); }
+.pedal-card-analog .pedal-card-info { padding: 9px 11px 11px; display: flex; flex-direction: column; }
+.pedal-card-analog .pedal-title-row { gap: 6px; }
+.pedal-card-analog .pedal-title-row h3 { font-size: 12px; }
+.pedal-card-analog .pedal-title-row p { font-size: 9px; }
+.pedal-card-analog .tag-row { margin: 6px 0 8px; gap: 4px; }
+.pedal-card-analog .tag { padding: 2px 6px; font-size: 8px; }
+.pedal-card-analog .full-button { min-height: 30px; font-size: 10px; padding: 0 8px; }
+
+.pedal-card-analog { position: relative; overflow: hidden; border: 1px solid #374151; border-radius: 12px; background: #0a0a0a; transition: transform .18s, box-shadow .18s, border-color .18s; cursor: pointer; display: flex; flex-direction: column; height: 100%; width: 100%; }
+.pedal-card-analog:hover { transform: translateY(-2px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.3); border-color: #f59e0b; }
+.pedal-link { position: absolute; inset: 0; z-index: 10; }
+
+.pedal-chassis { display: flex; flex-direction: column; height: 100%; }
+.pedal-top-panel { background: linear-gradient(180deg, #374151, #1f2937); padding: 10px; border-bottom: 3px solid #111827; }
+.pedal-indicators { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.pedal-jack-label { font-size: 10px; font-family: monospace; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; }
+.pedal-jack-out { color: #ef4444; }
+.pedal-jack-in { color: #10b981; }
+.pedal-led { width: 10px; height: 10px; border-radius: 50%; background: #4b5563; border: 1px solid #9ca3af; box-shadow: 0 0 4px rgba(0,0,0,0.5); transition: all 0.2s; cursor: pointer; }
+.pedal-led.is-on { background: #ef4444; border-color: #fca5a5; box-shadow: 0 0 12px #ef4444, 0 0 24px rgba(239, 68, 68, 0.6); }
+.pedal-knobs { display: flex; justify-content: center; gap: 10px; }
+.pedal-knob-group { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.pedal-knob { width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(135deg, #4b5563, #1f2937); border: 2px solid #9ca3af; position: relative; box-shadow: inset 0 1px 3px rgba(255,255,255,0.2), 0 2px 4px rgba(0,0,0,0.4); cursor: default; }
+.pedal-knob::before { content: ''; position: absolute; top: 50%; left: 50%; width: 2px; height: 8px; background: #d1d5db; transform: translate(-50%, -50%) rotate(-60deg); transform-origin: top center; }
+.pedal-knob-label { font-size: 9px; font-weight: 800; font-family: monospace; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.08em; }
+
+.pedal-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 12px 8px; text-align: center; }
+.pedal-body.pedal-color-distortion { background: #ea580c; color: #000; }
+.pedal-body.pedal-color-overdrive { background: #65a30d; color: #000; }
+.pedal-body.pedal-color-delay { background: #0284c7; color: #fff; }
+.pedal-body.pedal-color-chorus { background: #38bdf8; color: #000; }
+.pedal-body.pedal-color-flanger { background: #c026d3; color: #fff; }
+.pedal-body.pedal-color-metalzone { background: #18181b; color: #f97316; border: 2px solid #f97316; }
+.pedal-body.pedal-color-eq { background: #e4e4e7; color: #000; }
+.pedal-body.pedal-color-default { background: #374151; color: #fff; }
+
+.pedal-io-labels { display: flex; justify-content: space-between; width: 100%; font-size: 10px; font-weight: 900; font-family: monospace; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px; opacity: 0.85; }
+.pedal-brand { font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 2px; opacity: 0.95; }
+.pedal-name { font-size: 15px; font-weight: 900; margin: 0 0 2px; line-height: 1; text-shadow: 0 1px 2px rgba(0,0,0,0.3); }
+.pedal-model { font-size: 11px; font-weight: 700; opacity: 0.9; margin-bottom: 6px; }
+.pedal-category { font-size: 10px; font-weight: 800; font-family: monospace; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.85; }
+
+.pedal-footswitch { background: linear-gradient(180deg, #111827, #000000); padding: 10px; border-top: 3px solid #1f2937; }
+.pedal-hinge { width: 32px; height: 2px; background: linear-gradient(90deg, #6b7280, #9ca3af, #6b7280); border-radius: 2px; margin: 0 auto 8px; border: 1px solid #374151; box-shadow: inset 0 1px 2px rgba(255,255,255,0.1); }
+.pedal-pad { width: 100%; height: 32px; background: linear-gradient(180deg, #1f2937, #111827); border-radius: 6px; border: 1px solid #374151; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.4), 0 2px 4px rgba(0,0,0,0.3); position: relative; overflow: hidden; }
+.pedal-grip-line { width: 60%; height: 1px; background: #374151; border-radius: 2px; }
+.pedal-press { font-size: 9px; font-weight: 900; font-family: monospace; text-transform: uppercase; letter-spacing: 0.1em; color: #6b7280; }
+
 .pagination { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 18px; color: #82847a; font-size: 10px; }.pagination b { color: #d0d1c8; font-weight: 500; }.pagination > div { display: flex; align-items: center; gap: 5px; }.pagination .button { min-height: 30px; font-size: 10px; }.page-number { width: 29px; height: 29px; border: 1px solid #383a33; border-radius: 7px; color: #a9aa9f; background: #1d1e1a; cursor: pointer; }.page-number.selected { border-color: #67724a; color: var(--accent); background: #2b3021; }
 .empty-state { display: grid; justify-items: center; padding: 32px 14px; text-align: center; }.empty-icon { display: grid; width: 42px; height: 42px; place-items: center; margin-bottom: 9px; border: 1px solid #363a2d; border-radius: 50%; color: #b6cc7c; background: #25291f; }.empty-state h3 { margin: 0 0 4px; color: #e1e2d9; font: 600 14px var(--heading); }.empty-state p { color: var(--muted); font-size: 11px; }
 

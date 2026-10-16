@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom'
 import {
   Card,
   EmptyState,
@@ -6,45 +5,9 @@ import {
   Pagination,
   SearchBar,
   Skeleton,
-  StatusBadge,
 } from './ui'
 
-const pedalColors = ['orange', 'green', 'red', 'blue', 'silver', 'black', 'yellow']
-
-function getPedalColor(pedal) {
-  const hash = Array.from(`${pedal.brand}${pedal.name}`).reduce((total, character) => total + character.charCodeAt(0), 0)
-  return pedalColors[hash % pedalColors.length]
-}
-
-function getInitials(pedal) {
-  return (pedal.model || pedal.name).replace(/[^a-z0-9]/gi, '').slice(0, 3).toUpperCase()
-}
-
-export function PedalCard({ pedal }) {
-  return <Card className="pedal-card">
-    <div className={`pedal-visual pedal-${getPedalColor(pedal)}`}>
-      <span className="pedal-brand">{pedal.brand}</span>
-      {pedal.image
-        ? <img className="pedal-image" src={pedal.image} alt="" loading="lazy" />
-        : <span className="pedal-face">{getInitials(pedal)}</span>}
-      <span className="pedal-led" />
-      <span className="pedal-footswitch" />
-    </div>
-    <div className="pedal-card-body">
-      <div className="pedal-title-row">
-        <div><h3>{pedal.name}</h3><p>{pedal.model || pedal.brand}</p></div>
-        <StatusBadge tone={`pedal-status-${pedal.status?.toLowerCase()}`}>{pedal.status?.charAt(0).toUpperCase() + pedal.status?.slice(1)}</StatusBadge>
-      </div>
-      <div className="tag-row">
-        {pedal.category?.name && <span className="tag">{pedal.category.name}</span>}
-        {pedal.type && <span className="tag tag-dim">{pedal.type}</span>}
-      </div>
-      <Link className="button button-secondary full-button" to={`/pedals/${pedal.id}`}>
-        View pedal <span aria-hidden="true">→</span>
-      </Link>
-    </div>
-  </Card>
-}
+import { PedalCard } from './PedalCard'
 
 export function PedalGrid({ pedals, isLoading = false }) {
   if (isLoading) {

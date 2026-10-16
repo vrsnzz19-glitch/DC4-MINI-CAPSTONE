@@ -4,40 +4,34 @@ namespace Database\Seeders;
 
 use App\Models\PedalCategory;
 use App\Models\Pedal;
+use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        // 1. Create Categories
-        $overdrive = PedalCategory::firstOrCreate(['name' => 'Overdrive / Distortion']);
-        $delay = PedalCategory::firstOrCreate(['name' => 'Delay / Reverb']);
-        $modulation = PedalCategory::firstOrCreate(['name' => 'Modulation']);
+        // 1. Create test accounts
+        User::updateOrCreate(
+            ['email' => 'admin@tonevault.test'],
+            [
+                'name' => 'ToneVault Administrator',
+                'password' => Hash::make('ToneVaultAdmin!2026'),
+                'role' => 'admin',
+            ]
+        );
 
-        // 2. Create Sample Pedals
-        Pedal::create([
-            'pedal_category_id' => $overdrive->id,
-            'brand' => 'Ibanez',
-            'model' => 'TS9 Tube Screamer',
-            'type' => 'Overdrive',
-            'description' => 'Classic green overdrive pedal.',
-        ]);
+        User::updateOrCreate(
+            ['email' => 'guitarist@tonevault.test'],
+            [
+                'name' => 'Alex Morgan',
+                'password' => Hash::make('ToneVaultUser!2026'),
+                'role' => 'user',
+            ]
+        );
 
-        Pedal::create([
-            'pedal_category_id' => $delay->id,
-            'brand' => 'BOSS',
-            'model' => 'DD-8 Digital Delay',
-            'type' => 'Delay',
-            'description' => 'Versatile delay pedal with multiple modes.',
-        ]);
-
-        Pedal::create([
-            'pedal_category_id' => $overdrive->id,
-            'brand' => 'M-Vave',
-            'model' => 'Tank-G',
-            'type' => 'Multi-FX',
-            'description' => 'Portable multi-effects pedal.',
-        ]);
+        // 2. Seed the full pedal catalog (categories, pedals, boards, presets)
+        $this->call(ToneVaultSeeder::class);
     }
 }

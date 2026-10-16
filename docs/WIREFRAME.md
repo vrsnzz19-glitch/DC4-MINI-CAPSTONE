@@ -3,11 +3,20 @@
 ## Visual direction
 
 Use a professional, guitar/pedalboard-inspired visual style without making the
-interface feel like a guitar shop. The proposed palette is charcoal/near-black
-for navigation, warm off-white for page backgrounds, muted gray for borders,
-and a restrained amber or copper accent for primary actions and active states.
-Use clear sans-serif text, readable labels, consistent spacing, and simple
-pedal-shaped cards or small signal-chain indicators as visual motifs.
+interface feel like a guitar shop. The proposed palette is dark charcoal for
+the sidebar, warm near-black for page backgrounds, and restrained copper/amber
+accents for primary actions and active states. Use clean sans-serif typography,
+industrial uppercase labels, and zero clutter.
+
+Every guitar effect is explicitly rendered as an authentic mini stompbox across
+the Pedal Library grid, the Pedalboard signal chain, and the Rig Presets cards.
+Each stompbox features:
+- distinct category color-coding (deep red for distortion/fuzz, lime green for
+  overdrive, deep blue for delay/reverb, etc.),
+- top audio jacks,
+- three miniature control knobs,
+- a glowing green LED status dot,
+- a metallic footswitch at the bottom.
 
 Keep the layout responsive: desktop uses a sidebar with a content area; mobile
 uses a compact top bar and collapsible navigation. Use strong contrast and
