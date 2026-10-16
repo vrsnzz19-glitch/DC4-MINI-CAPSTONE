@@ -7,7 +7,8 @@ import useNotice from './hooks/useNotice'
 import UserLayout from './layouts/UserLayout'
 import { AdminCategoriesPage, AdminPedalsPage } from './pages/AdminCatalogPages'
 import GigMode from './pages/GigMode'
-import { PedalDetailPage, PedalLibraryPage } from './pages/PedalLibraryPage'
+import PedalLibraryPage from './pages/PedalLibraryPage'
+import PedalDetailPage from './pages/PedalDetailPage'
 import { PedalboardBuilderPage, PedalboardsPage } from './pages/PedalboardsPage'
 import {
   AdminRigPresetDetailsPage,
