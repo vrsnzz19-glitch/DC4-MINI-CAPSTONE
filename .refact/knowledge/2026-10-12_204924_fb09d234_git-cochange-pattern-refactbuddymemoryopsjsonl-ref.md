@@ -6,7 +6,7 @@ tags:
 - git
 - pattern
 created: 2026-10-12
-updated: 2026-10-12
+updated: 2026-10-16
 filenames:
 - .refact/buddy/memory_ops.jsonl
 - .refact/knowledge/2026-10-07_174944_3a8627b1_git-cochange-pattern-refactbuddymemoryopsjsonl-ref.md
@@ -15,7 +15,7 @@ kind: pattern
 status: proposed
 superseded_by: null
 deprecated_at: null
-review_after: 2026-10-12
+review_after: 2026-10-16
 source_chat_id: null
 created_at: 2026-10-12T12:49:24.229866300+00:00
 summary: null
