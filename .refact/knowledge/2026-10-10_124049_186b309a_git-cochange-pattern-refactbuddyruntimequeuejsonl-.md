@@ -6,7 +6,7 @@ tags:
 - git
 - pattern
 created: 2026-10-10
-updated: 2026-10-16
+updated: 2026-10-17
 filenames:
 - .refact/buddy/runtime_queue.jsonl
 - frontend/src/App.jsx
@@ -15,7 +15,7 @@ kind: pattern
 status: proposed
 superseded_by: null
 deprecated_at: null
-review_after: 2026-10-16
+review_after: 2026-10-17
 source_chat_id: null
 created_at: 2026-10-10T04:40:49.018540500+00:00
 summary: null
