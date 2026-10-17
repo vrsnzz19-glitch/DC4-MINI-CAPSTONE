@@ -26,7 +26,7 @@ class ToneVaultSeeder extends Seeder
         $guitarist = User::updateOrCreate(
             ['email' => 'guitarist@tonevault.test'],
             [
-                'name' => 'Alex Morgan',
+                'name' => 'Iverson Loquere',
                 'password' => Hash::make('ToneVaultUser!2026'),
             ],
         );

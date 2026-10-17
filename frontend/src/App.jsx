@@ -41,10 +41,10 @@ function Workspace() {
     sidebar={<aside className="sidebar">
       <Link className="brand" to="/pedalboards"><span className="brand-mark"><span /><span /><span /></span><span>TONE<span className="brand-accent">VAULT</span><small>GUITAR RIG STUDIO</small></span></Link>
       <nav className="side-nav" aria-label="Workspace navigation">
-        <Link className="nav-link" to="/pedalboards">My pedalboards</Link>
-        <Link className="nav-link" to="/pedals">Pedal library</Link>
-        <Link className="nav-link" to="/rig-presets">Rig presets</Link>
-        {user?.role === 'admin' && <Link className="nav-link" to="/admin">Admin</Link>}
+        {user?.role === 'user' && <Link className="nav-link" to="/pedalboards">My pedalboards</Link>}
+        {user?.role === 'user' && <Link className="nav-link" to="/pedals">Pedal library</Link>}
+        {user?.role === 'user' && <Link className="nav-link" to="/rig-presets">Rig presets</Link>}
+        {user?.role === 'admin' && <Link className="nav-link" to="/admin">Dashboard</Link>}
       </nav>
       <button className="profile-row" onClick={signOut}><span className="avatar">{user?.name?.slice(0, 2).toUpperCase()}</span><span><b>{user?.name}</b><small>Sign out</small></span></button>
     </aside>}

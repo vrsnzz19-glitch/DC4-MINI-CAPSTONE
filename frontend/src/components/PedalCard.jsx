@@ -1,128 +1,180 @@
-import React from 'react'
 import { useNavigate } from 'react-router-dom'
+
+const PEDAL_COLORS = [
+  '#ea580c', // orange
+  '#dc2626', // red
+  '#0284c7', // blue
+  '#9333ea', // purple
+  '#059669', // green
+  '#d97706', // amber
+  '#db2777', // pink
+  '#0891b2', // cyan
+  '#4f46e5', // indigo
+  '#65a30d', // lime
+]
+
+function getPedalColor(pedal) {
+  if (!pedal) return PEDAL_COLORS[0]
+  const id = Number(pedal.id) || 1
+  return PEDAL_COLORS[(id - 1) % PEDAL_COLORS.length]
+}
 
 export function PedalCard({ pedal }) {
   const navigate = useNavigate()
   if (!pedal) return null
 
-  const type = (pedal.type || '').toLowerCase()
-  const name = (pedal.name || '').toLowerCase()
-  const category = (pedal.category?.name || pedal.category || '').toLowerCase()
-
-  // Authentic Analog Pedal Color Themes & Styles
-  const getAnalogTheme = () => {
-    if (category.includes('distortion') || type.includes('distortion') || name.includes('distortion')) {
-      return {
-        chassis: 'bg-orange-600 text-black border-orange-500 shadow-orange-900/50',
-        badge: 'DISTORTION',
-        led: 'bg-red-600 shadow-[0_0_10px_#ef4444]',
-        knobs: 3
-      }
-    }
-    if (category.includes('overdrive') || type.includes('overdrive') || name.includes('overdrive') || name.includes('crunch')) {
-      return {
-        chassis: 'bg-lime-500 text-black border-lime-400 shadow-lime-900/50',
-        badge: 'OVERDRIVE',
-        led: 'bg-red-600 shadow-[0_0_10px_#ef4444]',
-        knobs: 3
-      }
-    }
-    if (category.includes('delay') || type.includes('delay') || type.includes('reverb') || name.includes('delay')) {
-      return {
-        chassis: 'bg-sky-500 text-black border-sky-400 shadow-sky-900/50',
-        badge: 'DELAY / REVERB',
-        led: 'bg-cyan-300 shadow-[0_0_10px_#22d3ee]',
-        knobs: 3
-      }
-    }
-    if (category.includes('modulation') || type.includes('chorus') || type.includes('phase') || type.includes('flanger')) {
-      return {
-        chassis: 'bg-fuchsia-600 text-white border-fuchsia-500 shadow-fuchsia-900/50',
-        badge: 'MODULATION',
-        led: 'bg-purple-300 shadow-[0_0_10px_#d8b4fe]',
-        knobs: 2
-      }
-    }
-    if (category.includes('dynamic') || type.includes('compressor') || type.includes('wah') || type.includes('eq')) {
-      return {
-        chassis: 'bg-amber-400 text-black border-amber-300 shadow-amber-900/50',
-        badge: 'DYNAMIC / FILTER',
-        led: 'bg-emerald-500 shadow-[0_0_10px_#10b981]',
-        knobs: 3
-      }
-    }
-    return {
-      chassis: 'bg-zinc-700 text-white border-zinc-600 shadow-zinc-900/50',
-      badge: 'STOMPBOX',
-      led: 'bg-red-500 shadow-[0_0_10px_#ef4444]',
-      knobs: 3
-    }
-  }
-
-  const theme = getAnalogTheme()
+  const accent = getPedalColor(pedal)
+  const categoryLabel = typeof pedal.category === 'object' ? pedal.category?.name : pedal.category || 'Effects'
 
   return (
-    <div 
-      onClick={() => navigate(`/pedals/${pedal.id}`)}
-      className="group flex flex-col justify-between w-full h-[320px] rounded-xl bg-zinc-950 border border-zinc-800 hover:border-amber-500 cursor-pointer transition-all duration-300 hover:-translate-y-1 shadow-2xl overflow-hidden p-2.5"
+    <div
+      onClick={() => navigate(`/pedals/${pedal.id || 1}`)}
+      style={{
+        width: '100%',
+        maxWidth: '110px',
+        cursor: 'pointer',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        transition: 'transform 0.2s ease, filter 0.2s ease',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = 'translateY(-4px)'
+        e.currentTarget.style.filter = 'brightness(1.1)'
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = 'translateY(0)'
+        e.currentTarget.style.filter = 'brightness(1)'
+      }}
     >
-      {/* 1. TOP METALLIC PANEL (IN/OUT & ROTARY KNOBS) */}
-      <div className="w-full h-16 bg-gradient-to-b from-zinc-900 to-zinc-950 rounded-lg p-2 flex flex-col justify-between border border-zinc-800 shadow-inner">
-        <div className="flex justify-between items-center text-[7px] font-mono text-zinc-400 px-1">
-          <span className="font-bold text-zinc-300">OUT</span>
-          <div className="flex items-center gap-1">
-            <span className="text-[6px] tracking-widest text-zinc-500">CHECK</span>
-            <div className={`w-2 h-2 rounded-full ${theme.led}`} />
-          </div>
-          <span className="font-bold text-zinc-300">IN</span>
+      {/* 3D Pedal Enclosure */}
+      <div
+        style={{
+          width: '100%',
+          aspectRatio: '2 / 3.2', // Extra tall, realistic proportions
+          backgroundColor: accent,
+          borderRadius: '6px',
+          padding: '8px 6px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          position: 'relative',
+          // Complex shadows for 3D metal depth
+          boxShadow: `
+            0 12px 20px -8px rgba(0,0,0,0.9),
+            0 4px 6px -2px rgba(0,0,0,0.6),
+            inset 0 1px 2px rgba(255,255,255,0.4),
+            inset 0 -4px 10px rgba(0,0,0,0.5),
+            inset 2px 0 4px rgba(255,255,255,0.1),
+            inset -2px 0 4px rgba(0,0,0,0.4)
+          `,
+          // Subtle metallic sheen
+          backgroundImage: `linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 40%, rgba(0,0,0,0.1) 100%)`,
+        }}
+      >
+        {/* Screws */}
+        <div style={{ position: 'absolute', top: '5px', left: '5px', width: '4px', height: '4px', borderRadius: '50%', background: '#52525b', boxShadow: 'inset 0 1px 1px rgba(0,0,0,0.8), 0 1px 1px rgba(255,255,255,0.3)' }} />
+        <div style={{ position: 'absolute', top: '5px', right: '5px', width: '4px', height: '4px', borderRadius: '50%', background: '#52525b', boxShadow: 'inset 0 1px 1px rgba(0,0,0,0.8), 0 1px 1px rgba(255,255,255,0.3)' }} />
+        <div style={{ position: 'absolute', bottom: '5px', left: '5px', width: '4px', height: '4px', borderRadius: '50%', background: '#52525b', boxShadow: 'inset 0 1px 1px rgba(0,0,0,0.8), 0 1px 1px rgba(255,255,255,0.3)' }} />
+        <div style={{ position: 'absolute', bottom: '5px', right: '5px', width: '4px', height: '4px', borderRadius: '50%', background: '#52525b', boxShadow: 'inset 0 1px 1px rgba(0,0,0,0.8), 0 1px 1px rgba(255,255,255,0.3)' }} />
+
+        {/* LED & Top Jacks Row */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '0 2px', marginTop: '2px' }}>
+          <span style={{ fontSize: '5px', fontFamily: 'monospace', fontWeight: 900, color: 'rgba(255,255,255,0.5)' }}>IN</span>
+          
+          {/* Glowing LED */}
+          <div
+            style={{
+              width: '6px',
+              height: '6px',
+              borderRadius: '50%',
+              backgroundColor: '#ef4444',
+              boxShadow: '0 0 6px #ef4444, inset 0 1px 2px rgba(255,255,255,0.8)',
+              border: '1px solid rgba(0,0,0,0.5)',
+            }}
+          />
+          
+          <span style={{ fontSize: '5px', fontFamily: 'monospace', fontWeight: 900, color: 'rgba(255,255,255,0.5)' }}>OUT</span>
         </div>
-        
-        {/* Rotary Knobs */}
-        <div className="flex justify-around items-center px-1">
-          {Array.from({ length: theme.knobs }).map((_, idx) => (
-            <div key={idx} className="flex flex-col items-center">
-              <div className="w-4 h-4 rounded-full bg-gradient-to-b from-zinc-600 to-zinc-800 border border-zinc-500 flex items-center justify-center shadow-md relative">
-                <div className="w-0.5 h-1.5 bg-zinc-200 absolute top-0 rounded-full" />
-              </div>
-              <span className="text-[5px] font-bold text-zinc-400 mt-0.5">
-                {idx === 0 ? 'GAIN' : idx === 1 ? 'TONE' : idx === 2 ? 'LEVEL' : 'RATE'}
-              </span>
+
+        {/* 3D Knobs Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', width: '100%', justifyContent: 'center', padding: '0 4px', marginTop: '4px' }}>
+          {[0, 1, 2, 3].map((i) => (
+            <div
+              key={i}
+              style={{
+                width: '16px',
+                height: '16px',
+                borderRadius: '50%',
+                background: 'radial-gradient(circle at 30% 30%, #3f3f46, #09090b)',
+                border: '1px solid #18181b',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.8), inset 0 1px 1px rgba(255,255,255,0.2)',
+                margin: '0 auto',
+                position: 'relative',
+                display: 'flex',
+                justifyContent: 'center',
+              }}
+            >
+              {/* Knob Pointer */}
+              <div style={{ width: '2px', height: '5px', background: '#e4e4e7', marginTop: '2px', borderRadius: '1px' }} />
             </div>
           ))}
         </div>
-      </div>
 
-      {/* 2. CHASSIS BODY (Vibrant Analog Pedal Enclosure) */}
-      <div className={`w-full flex-1 ${theme.chassis} border-2 p-3 flex flex-col justify-between shadow-lg rounded-md my-1.5 font-sans`}>
-        <div className="flex justify-between text-[7px] font-black opacity-80 tracking-widest uppercase">
-          <span>◀ OUTPUT</span>
-          <span>INPUT ◀</span>
-        </div>
-        
-        <div className="text-center my-auto px-1">
-          <span className="text-[7px] font-mono tracking-widest uppercase opacity-90 block mb-1 font-extrabold">
-            {theme.badge}
+        {/* Brand & Model Text */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', width: '100%', margin: '4px 0' }}>
+          <span style={{ fontSize: '6px', fontWeight: 800, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>
+            {pedal.brand || 'PEDAL'}
           </span>
-          <h3 className="text-xs font-black leading-tight my-0.5 drop-shadow-sm truncate">
-            {pedal.name}
+          <h3 style={{ fontSize: '8px', fontWeight: 900, color: '#ffffff', margin: 0, lineHeight: 1.1, textTransform: 'uppercase', letterSpacing: '0.2px', textShadow: '0 1px 2px rgba(0,0,0,0.6)' }}>
+            {pedal.model || pedal.type || 'FX'}
           </h3>
-          <p className="text-[8px] font-extrabold opacity-85 uppercase tracking-wider">
-            {pedal.brand}
-          </p>
         </div>
 
-        <div className="text-center text-[7px] font-black tracking-widest uppercase opacity-80">
-          {pedal.category?.name || pedal.category}
+        {/* 3D Metallic Footswitch */}
+        <div
+          style={{
+            width: '26px',
+            height: '26px',
+            borderRadius: '50%',
+            background: 'conic-gradient(from 180deg at 50% 50%, #a1a1aa 0deg, #f4f4f5 90deg, #71717a 180deg, #27272a 270deg, #a1a1aa 360deg)',
+            boxShadow: `
+              0 4px 6px rgba(0,0,0,0.7),
+              inset 0 2px 4px rgba(255,255,255,0.6),
+              inset 0 -2px 4px rgba(0,0,0,0.6)
+            `,
+            border: '1px solid #18181b',
+            marginBottom: '2px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          {/* Footswitch inner detail */}
+          <div style={{ width: '18px', height: '18px', borderRadius: '50%', border: '1px solid rgba(0,0,0,0.3)', background: 'radial-gradient(circle at 40% 40%, #e4e4e7, #52525b)' }} />
         </div>
       </div>
 
-      {/* 3. RUBBERIZED FOOTSWITCH */}
-      <div className="w-full h-12 bg-zinc-900 rounded-lg p-1.5 flex flex-col justify-between items-center border border-zinc-800">
-        <div className="w-8 h-1 bg-zinc-700 rounded-full shadow-inner" />
-        <div className="w-full h-5 bg-zinc-950 rounded flex items-center justify-center border border-zinc-800 group-hover:bg-zinc-800 transition-colors shadow-inner">
-          <span className="text-[7px] font-black tracking-widest text-zinc-500 group-hover:text-amber-400">PRESS</span>
-        </div>
-      </div>
+      {/* Caption */}
+      <span
+        style={{
+          marginTop: '10px',
+          fontSize: '8px',
+          fontWeight: 700,
+          textTransform: 'uppercase',
+          letterSpacing: '0.4px',
+          color: '#a1a1aa',
+          textAlign: 'center',
+          lineHeight: 1.2,
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          width: '100%',
+        }}
+      >
+        {categoryLabel}
+      </span>
     </div>
   )
 }
