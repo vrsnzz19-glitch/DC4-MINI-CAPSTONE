@@ -6,7 +6,7 @@ tags:
 - git
 - hotspot
 created: 2026-10-08
-updated: 2026-10-16
+updated: 2026-10-17
 filenames:
 - .refact/buddy/memory_ops.jsonl
 links: []
@@ -14,7 +14,7 @@ kind: code
 status: proposed
 superseded_by: null
 deprecated_at: null
-review_after: 2026-10-16
+review_after: 2026-10-17
 source_chat_id: null
 created_at: 2026-10-08T13:55:46.289731+00:00
 summary: null
