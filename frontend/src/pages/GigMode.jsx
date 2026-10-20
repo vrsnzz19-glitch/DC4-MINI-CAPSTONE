@@ -3,20 +3,6 @@ import { Link, useParams } from 'react-router-dom'
 import { EmptyState, ErrorMessage, LoadingSpinner } from '../components/ui'
 import apiClient from '../services/apiClient'
 
-const visualizerBars = Array.from({ length: 48 }, (_, index) => ({
-  height: 0.2 + ((index * 17 + index * index * 7) % 77) / 100,
-  delay: `${(index % 12) * -0.09}s`,
-}))
-
-const crowdMembers = Array.from({ length: 32 }, (_, index) => ({
-  x: index * 40 + 15,
-  headY: 34 + (index % 3) * 3,
-  height: 34 + ((index * 11) % 19),
-  arm: index % 3,
-  delay: `${(index % 7) * -0.22}s`,
-}))
-
-// Added Color Palette for unique pedal colors
 const PEDAL_COLORS = [
   '#ea580c', '#dc2626', '#0284c7', '#9333ea', '#059669', 
   '#d97706', '#db2777', '#0891b2', '#4f46e5', '#65a30d'
@@ -32,14 +18,19 @@ export default function GigMode() {
   const [error, setError] = useState('')
   const [retry, setRetry] = useState(0)
 
+  const [eqBands, setEqBands] = useState(() => Array.from({ length: 24 }, () => 0))
+  const [meterLevels, setMeterLevels] = useState({})
+
   useEffect(() => {
     const controller = new AbortController()
     apiClient.get(`/pedalboards/${id}`, { signal: controller.signal })
       .then(({ data }) => {
         setBoard(data.data)
         setLoadedId(id)
-        setActivePedals(Object.fromEntries((data.data.pedals || []).map((pedal) => [pedal.id, false])))
-        setPedalLevels(Object.fromEntries((data.data.pedals || []).map((pedal) => [pedal.id, { volume: 70, gain: 45, drive: 30, tone: 50 }])))
+        const pedals = data.data.pedals || []
+        setActivePedals(Object.fromEntries(pedals.map((p) => [p.id, false])))
+        setPedalLevels(Object.fromEntries(pedals.map((p) => [p.id, { volume: 75, gain: 45, drive: 30, tone: 50 }])))
+        setMeterLevels(Object.fromEntries(pedals.map((p) => [p.id, 0])))
         setError('')
       })
       .catch((requestError) => {
@@ -48,270 +39,321 @@ export default function GigMode() {
       .finally(() => {
         if (!controller.signal.aborted) setIsLoading(false)
       })
-
     return () => controller.abort()
   }, [id, retry])
 
-  const togglePedal = (pedalId) => {
-    setActivePedals((current) => ({ ...current, [pedalId]: !current[pedalId] }))
-  }
+  // --- LIVE ANIMATION ENGINE ---
+  useEffect(() => {
+    if (isLoading || !board) return;
+    const interval = setInterval(() => {
+      setMeterLevels(prev => {
+        const next = { ...prev }
+        board.pedals?.forEach(pedal => {
+          const isOn = activePedals[pedal.id]
+          const vol = pedalLevels[pedal.id]?.volume || 75
+          if (isOn) {
+            const targetMax = (vol / 100) * 100
+            const jump = (Math.random() - 0.5) * 45
+            let newLevel = (prev[pedal.id] || 0) + jump
+            if (newLevel > targetMax) newLevel = targetMax
+            if (newLevel < 15) newLevel = 15 + Math.random() * 25
+            next[pedal.id] = newLevel
+          } else {
+            next[pedal.id] = Math.max(0, (prev[pedal.id] || 0) - 25)
+          }
+        })
+        return next
+      })
 
-  const updatePedalLevel = (pedalId, control, value) => {
-    setPedalLevels((current) => ({
-      ...current,
-      [pedalId]: { ...current[pedalId], [control]: Number(value) },
-    }))
-  }
+      setEqBands(prev => {
+        const activeCount = board.pedals?.filter(p => activePedals[p.id]).length || 0
+        const energy = Math.min(activeCount, 4) / 4
+        return prev.map(val => {
+          if (activeCount > 0) {
+            const jump = (Math.random() - 0.5) * 35
+            let newH = val + jump
+            const maxH = 30 + (energy * 65)
+            if (newH > maxH) newH = maxH
+            if (newH < 10) newH = 10 + Math.random() * 20
+            return newH
+          }
+          return Math.max(0, val - 15)
+        })
+      })
+    }, 220) 
+    return () => clearInterval(interval)
+  }, [board, activePedals, pedalLevels, isLoading])
 
-  if (error) return <div className="gig-mode-page"><div className="gig-mode-container"><ErrorMessage onRetry={() => { setError(''); setIsLoading(true); setRetry((value) => value + 1) }}>{error}</ErrorMessage><Link className="button button-secondary" to="/pedalboards">Back to pedalboards</Link></div></div>
-  if (isLoading || loadedId !== id) return <LoadingSpinner label="Loading your live rig..." />
+  const togglePedal = (pedalId) => setActivePedals(c => ({ ...c, [pedalId]: !c[pedalId] }))
+  const updatePedalLevel = (pedalId, control, value) => setPedalLevels(c => ({ ...c, [pedalId]: { ...c[pedalId], [control]: Number(value) } }))
+
+  if (error) return <div className="gig-mode-page"><div className="gig-mode-container"><ErrorMessage onRetry={() => { setError(''); setIsLoading(true); setRetry(v => v + 1) }}>{error}</ErrorMessage><Link className="button button-secondary" to="/pedalboards">Back to pedalboards</Link></div></div>
+  if (isLoading || loadedId !== id) return <LoadingSpinner label="Booting up live rig..." />
   if (!board) return <EmptyState title="Pedalboard not found" message="This saved rig could not be found." action={<Link className="button button-secondary" to="/pedalboards">Back to pedalboards</Link>} />
 
-  return <div className="gig-mode-page">
+  const anyPedalOn = Object.values(activePedals).some(v => v)
+
+  return <div className="gig-mode-page" style={{ 
+    backgroundColor: '#09090b', 
+    minHeight: '100vh', 
+    color: '#fff', 
+    fontFamily: 'system-ui, -apple-system, sans-serif', 
+    display: 'flex', 
+    flexDirection: 'column',
+    backgroundImage: 'radial-gradient(circle at 50% 0%, #1f1f22 0%, #09090b 70%)',
+    overflowX: 'hidden'
+  }}>
     
-    {/* Inline styles for the custom knob UI and dynamic pedal colors */}
     <style>{`
-      .custom-knob-wrapper {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 6px;
-      }
-      .custom-knob {
-        position: relative;
-        width: 44px;
-        height: 44px;
-        border-radius: 50%;
-        background: radial-gradient(circle at 35% 35%, #3f3f46, #111);
-        box-shadow: 0 6px 10px rgba(0,0,0,0.6), inset 0 2px 4px rgba(255,255,255,0.1);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-      .custom-knob-pointer {
-        position: absolute;
-        top: 0;
-        left: 50%;
-        width: 3px;
-        height: 12px;
-        background: #fff;
-        border-radius: 2px;
-        transform-origin: 50% 22px;
-        transform: translateX(-50%);
-        transition: transform 0.1s ease-out;
-      }
-      .custom-knob-input {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        opacity: 0;
-        cursor: pointer;
-        writing-mode: bt-lr; 
-        -webkit-appearance: slider-vertical;
-        z-index: 10;
-      }
-      .custom-knob-label {
-        font-size: 9px;
-        font-weight: 700;
-        color: #a1a1aa;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-      }
-      
-      /* Dynamic pedal enclosure styles */
-      .dynamic-pedal {
-        border: 1px solid rgba(0,0,0,0.4);
+      /* --- SHRUNK DIMENSIONS PARA KASYA SA SCREEN --- */
+      .glass-panel {
+        background: rgba(24, 24, 27, 0.65);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
         border-radius: 12px;
-        position: relative;
-        overflow: hidden;
-        transition: all 0.2s ease;
+        box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7);
+      }
+
+      .top-layout { display: flex; justify-content: center; gap: 16px; max-width: 1000px; margin: 15px auto 0; padding: 0 20px; width: 100%; z-index: 10; }
+      
+      /* MASTER EQ - Pinaikli ang height at pinaliit ang width */
+      .master-eq-panel { width: 300px; flex-shrink: 0; padding: 15px; display: flex; flex-direction: column; height: 260px; }
+      .eq-sliders { display: flex; flex: 1; gap: 3px; align-items: flex-end; margin-top: 15px; }
+      .eq-band { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; position: relative; }
+      .eq-bar { width: 100%; background: linear-gradient(to top, #10b981, #84cc16, #eab308); border-radius: 3px; transition: height 0.25s cubic-bezier(0.4, 0, 0.2, 1); position: absolute; bottom: 0; box-shadow: 0 0 10px rgba(234, 179, 8, 0.2); }
+      .eq-input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: ns-resize; writing-mode: bt-lr; -webkit-appearance: slider-vertical; z-index: 10; }
+
+      /* CHANNEL MIXER - Pinaikli din */
+      .mixer-panel { flex: 1; max-width: 650px; padding: 15px 0; display: flex; flex-direction: column; height: 260px; }
+      .mixer-channels-container { display: flex; overflow-x: auto; flex: 1; padding: 0 10px; }
+      .channel-strip { width: 80px; flex-shrink: 0; background: rgba(39, 39, 42, 0.8); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 8px; display: flex; flex-direction: column; padding: 10px 5px; margin-right: 8px; }
+      .fader-section { flex: 1; display: flex; gap: 8px; justify-content: center; padding: 10px 0; }
+      .fader-track { width: 6px; background: #09090b; border-radius: 3px; position: relative; box-shadow: inset 0 2px 6px rgba(0,0,0,0.9), 0 1px 0 rgba(255,255,255,0.05); }
+      .fader-cap { width: 18px; height: 12px; background: linear-gradient(to bottom, #e4e4e7, #71717a); border-radius: 3px; position: absolute; left: -6px; transform: translateY(-50%); box-shadow: 0 4px 8px rgba(0,0,0,0.8), inset 0 1px 1px rgba(255,255,255,0.5); pointer-events: none; }
+      .fader-input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: ns-resize; writing-mode: bt-lr; -webkit-appearance: slider-vertical; }
+      
+      .meter-pair { width: 8px; display: flex; gap: 2px; background: #09090b; padding: 2px; border-radius: 2px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.8); }
+      .meter-bar { flex: 1; border-radius: 2px; position: relative; overflow: hidden; background: #18181b; }
+      .meter-fill { position: absolute; bottom: 0; width: 100%; background: linear-gradient(to top, #10b981 65%, #eab308 85%, #ef4444 98%); transition: height 0.22s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 0 5px rgba(16, 185, 129, 0.4); }
+      
+      .ms-btn { flex: 1; font-size: 9px; font-weight: 800; padding: 4px 0; border: none; border-radius: 4px; cursor: pointer; background: #27272a; color: #a1a1aa; transition: all 0.15s ease; }
+      .ms-btn.mute.active { background: #ef4444; color: #fff; box-shadow: 0 0 10px rgba(239, 68, 68, 0.4); }
+
+      /* PEDALBOARD - Pinaikli at pinaliit ang mga pedal */
+      .board-wrapper { flex: 1; display: flex; justify-content: center; align-items: flex-start; margin-top: 20px; padding: 0 20px 40px; perspective: 1400px; z-index: 5; }
+      
+      .pedalboard-wood { 
+        width: 100%; max-width: 800px; min-height: 300px; /* Pinaliit mula 420px */
+        background: linear-gradient(145deg, #2a1b12, #180e08);
+        border-radius: 12px; padding: 30px 25px; /* Pinaliit ang padding */
+        box-shadow: 
+          inset 0 15px 30px rgba(0,0,0,0.9), 
+          inset 0 -8px 15px rgba(0,0,0,0.8),
+          0 30px 60px rgba(0,0,0,0.9),
+          0 0 0 10px #1c130d;
+        border: 2px solid #4a2e1b;
+        position: relative; 
+        transform: rotateX(15deg); 
+        transform-style: preserve-3d; 
+      }
+
+      .pedalboard-wood::after {
+        content: ''; position: absolute; inset: 0; border-radius: 10px;
+        background-image: repeating-linear-gradient(90deg, transparent, transparent 50px, rgba(0,0,0,0.1) 50px, rgba(0,0,0,0.1) 51px);
+        pointer-events: none; opacity: 0.5;
+      }
+
+      /* Grid ng Pedals */
+      .pedal-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 20px; align-content: start; transform-style: preserve-3d; justify-content: center; }
+      .pedal-wrapper { position: relative; transform: translateZ(20px); transform-style: preserve-3d; transition: transform 0.3s ease; }
+      .pedal-wrapper:hover { transform: translateZ(30px) translateY(-3px); }
+
+      /* Pinaliit na Pedal */
+      .dynamic-pedal { 
+        position: relative; width: 100%; aspect-ratio: 2 / 3; border-radius: 6px; 
+        display: flex; flex-direction: column; align-items: center; padding: 10px 8px;
+        box-shadow: 
+          0 15px 25px rgba(0,0,0,0.9),
+          inset 0 2px 4px rgba(255,255,255,0.4), 
+          inset 0 -6px 10px rgba(0,0,0,0.7), 
+          inset 3px 0 6px rgba(255,255,255,0.15), 
+          inset -3px 0 6px rgba(0,0,0,0.5);
+        border: 1px solid rgba(0,0,0,0.8);
+        transition: all 0.3s ease;
       }
       
-      .dynamic-pedal::before {
-        content: '';
-        position: absolute;
-        inset: 0;
-        background-image: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 40%, rgba(0,0,0,0.2) 100%);
-        pointer-events: none;
+      .dynamic-pedal.is-on { 
+        box-shadow: 
+          0 20px 30px rgba(0,0,0,0.95),
+          0 0 30px 3px var(--pedal-glow),
+          inset 0 2px 5px rgba(255,255,255,0.6), 
+          inset 0 -6px 12px rgba(0,0,0,0.8);
+        transform: translateY(-2px);
       }
+
+      .dynamic-pedal::before { content: ''; position: absolute; inset: 0; background-image: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 40%, rgba(0,0,0,0.4) 100%); pointer-events: none; border-radius: 6px; }
+      
+      .pedal-rim { position: absolute; bottom: -4px; left: 0; right: 0; height: 6px; background: linear-gradient(to bottom, #a1a1aa, #27272a); border-radius: 0 0 6px 6px; z-index: -1; box-shadow: 0 3px 5px rgba(0,0,0,0.9); }
+      
+      /* Knobs */
+      .custom-knob-wrapper { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+      .custom-knob { position: relative; width: 28px; height: 28px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #52525b, #111); box-shadow: 0 3px 6px rgba(0,0,0,0.9), inset 0 2px 4px rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; }
+      .custom-knob-pointer { position: absolute; top: 0; left: 50%; width: 3px; height: 8px; background: #fff; border-radius: 2px; transform-origin: 50% 14px; transform: translateX(-50%); transition: transform 0.1s ease-out; box-shadow: 0 0 4px rgba(0,0,0,0.8); }
+      .custom-knob-input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; writing-mode: bt-lr; -webkit-appearance: slider-vertical; z-index: 10; }
+      .custom-knob-label { font-size: 7px; font-weight: 800; color: rgba(255,255,255,0.9); text-transform: uppercase; text-shadow: 0 1px 3px rgba(0,0,0,0.9); }
     `}</style>
 
-    <div className="gig-stage-backdrop" aria-hidden="true">
-      <div className="gig-stage-light gig-stage-light-blue" />
-      <div className="gig-stage-light gig-stage-light-purple" />
-      <div className="gig-stage-light gig-stage-light-amber" />
-      <div className="gig-stage-beam gig-stage-beam-left" />
-      <div className="gig-stage-beam gig-stage-beam-right" />
-      <svg className="gig-crowd" viewBox="0 0 1300 100" preserveAspectRatio="xMidYMax slice">
-        <defs>
-          <linearGradient id="crowd-fade" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0" stopColor="#090a09" stopOpacity="0" />
-            <stop offset=".32" stopColor="#090a09" stopOpacity=".82" />
-            <stop offset="1" stopColor="#050605" />
-          </linearGradient>
-        </defs>
-        <path fill="url(#crowd-fade)" d="M0 42Q70 19 140 42T280 38T420 45T560 36T700 43T840 38T980 44T1120 35T1300 42V100H0Z" />
-        {crowdMembers.map((person, index) => <g
-          className="gig-crowd-person"
-          key={index}
-          style={{ '--crowd-delay': person.delay }}
-          transform={`translate(${person.x} ${person.headY})`}
-        >
-          <circle cx="0" cy="0" r="5" />
-          <path d={`M-10 34Q-11 15 -5 9H5Q11 15 10 34Z${person.arm === 0 ? ' M-7 16L-17 5L-20 -7 M7 16L17 5L20 -7' : person.arm === 1 ? ' M-7 17L-17 27 M7 17L17 27' : ' M-7 16L-16 11L-19 0 M7 16L16 11L19 0'}`} />
-        </g>)}
-      </svg>
-    </div>
-    <div className="gig-mode-container">
-      <header className="gig-mode-header">
-        <div><span className="gig-live-indicator"><i /> LIVE GIG POV</span><h1>{board.name}</h1></div>
-        <Link className="button button-secondary" to="/pedalboards">Exit stage</Link>
-      </header>
+    {/* Header - Pinaliit ang padding at font size */}
+    <header style={{ padding: '15px 30px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 20 }}>
+      <div>
+        <span style={{ fontSize: '10px', fontWeight: '900', color: '#ef4444', letterSpacing: '2px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#ef4444', boxShadow: '0 0 10px #ef4444', animation: 'pulse 2s infinite' }} /> LIVE GIG POV
+        </span>
+        <h1 style={{ margin: '4px 0 0 0', fontSize: '24px', fontWeight: 900, letterSpacing: '-0.5px' }}>{board.name}</h1>
+      </div>
+      <Link to="/pedalboards" style={{ background: 'rgba(39, 39, 42, 0.8)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '8px 16px', borderRadius: '6px', textDecoration: 'none', fontWeight: 'bold', fontSize: '12px', transition: 'all 0.2s' }}>
+        Exit stage
+      </Link>
+    </header>
 
-      <main className="gig-stage">
-        <div className="gig-stage-heading"><span className="eyebrow">STAGE SIGNAL CHAIN</span><p>Tap a footswitch to toggle each effect.</p></div>
-        <div className="gig-visualizer" role="img" aria-label="Animated audio spectrum visualizer">
-          <div className="gig-visualizer-label"><span>STAGE OUTPUT</span><span><i /> LIVE MIX</span></div>
-          <div className="gig-eq-bars" aria-hidden="true">{visualizerBars.map((bar, index) => <i
-            key={index}
-            style={{ '--bar-height': bar.height, '--bar-delay': bar.delay }}
-          />)}</div>
+    {/* Top Panels - Pinaikli ang layout */}
+    <div className="top-layout">
+      {/* EQ Panel */}
+      <div className="glass-panel master-eq-panel">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '8px' }}>
+          <span style={{ fontSize: '11px', fontWeight: '800', letterSpacing: '1px' }}>MASTER EQ</span>
+          <span style={{ fontSize: '9px', fontWeight: 'bold', color: anyPedalOn ? '#10b981' : '#ef4444', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <span style={{ width: '6px', height: '6px', background: anyPedalOn ? '#10b981' : '#ef4444', borderRadius: '50%' }} /> 
+            {anyPedalOn ? 'LIVE' : 'IDLE'}
+          </span>
         </div>
-        
-        {board.pedals?.length
-          ? <div className="gig-pedals">
-            {board.pedals.map((pedal, index) => {
-              const isOn = Boolean(activePedals[pedal.id])
-              const pedalName = pedal.name || pedal.model || 'Pedal'
-              const levels = pedalLevels[pedal.id] || { volume: 70, gain: 45, drive: 30, tone: 50 }
-              
-              // DYNAMIC COLOR LOGIC
-              const numericId = Number(pedal.id) || 1
-              const pedalColor = PEDAL_COLORS[(numericId - 1) % PEDAL_COLORS.length]
+        <div className="eq-sliders">
+          {eqBands.map((height, index) => (
+            <div className="eq-band" key={index}>
+              <div className="eq-bar" style={{ height: `${height}%` }} />
+              <input type="range" min="0" max="100" value={height} onChange={(e) => {
+                const newBands = [...eqBands]; newBands[index] = Number(e.target.value); setEqBands(newBands);
+              }} className="eq-input" />
+            </div>
+          ))}
+        </div>
+      </div>
 
-              const knobControls = [
-                { key: 'volume', label: 'Volume' },
-                { key: 'gain', label: 'Gain' },
-                { key: 'drive', label: 'Drive' },
-                { key: 'tone', label: 'Tone' },
-              ]
+      {/* Mixer Panel */}
+      <div className="glass-panel mixer-panel">
+        <div style={{ padding: '0 15px 8px', borderBottom: '1px solid rgba(255,255,255,0.1)', fontSize: '11px', fontWeight: '800', letterSpacing: '1px' }}>CHANNEL MIXER</div>
+        <div className="mixer-channels-container">
+          {board.pedals?.map((pedal) => {
+            const isOn = Boolean(activePedals[pedal.id])
+            const levels = pedalLevels[pedal.id] || { volume: 75 }
+            const numericId = Number(pedal.id) || 1
+            const pedalColor = PEDAL_COLORS[(numericId - 1) % PEDAL_COLORS.length]
+            const currentLevel = meterLevels[pedal.id] || 0
 
-              return <div className="gig-chain-step" key={pedal.id}>
-                
-                {/* Applied dynamic background color and class here */}
+            return (
+              <div className="channel-strip" key={`mixer-${pedal.id}`}>
+                <div style={{ textAlign: 'center', fontSize: '8px', fontWeight: '800', color: isOn ? pedalColor : '#71717a', marginBottom: '10px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {pedal.name}
+                </div>
+                <div className="fader-section">
+                  <div style={{ position: 'relative', height: '100%', width: '20px', display: 'flex', justifyContent: 'center' }}>
+                    <div className="fader-track">
+                      <div className="fader-cap" style={{ top: `${100 - levels.volume}%` }} />
+                      <input type="range" min="0" max="100" value={levels.volume} onChange={(e) => updatePedalLevel(pedal.id, 'volume', e.target.value)} className="fader-input" style={{ height: '100%', top: 0 }} />
+                    </div>
+                  </div>
+                  <div className="meter-pair">
+                    <div className="meter-bar"><div className="meter-fill" style={{ height: `${currentLevel}%` }} /></div>
+                    <div className="meter-bar"><div className="meter-fill" style={{ height: `${currentLevel * 0.9}%` }} /></div>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '4px', marginTop: 'auto' }}>
+                  <button className={`ms-btn mute ${!isOn ? 'active' : ''}`} onClick={() => togglePedal(pedal.id)}>MUTE</button>
+                  <button className="ms-btn solo">SOLO</button>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+
+    {/* Pedalboard - Pinaliit din */}
+    <div className="board-wrapper">
+      <div className="pedalboard-wood">
+        <div className="pedal-grid">
+          {board.pedals?.map((pedal) => {
+            const isOn = Boolean(activePedals[pedal.id])
+            const pedalName = pedal.name || pedal.model || 'Pedal'
+            const levels = pedalLevels[pedal.id] || { volume: 75, gain: 45, drive: 30, tone: 50 }
+            const numericId = Number(pedal.id) || 1
+            const pedalColor = PEDAL_COLORS[(numericId - 1) % PEDAL_COLORS.length]
+
+            return (
+              <div className="pedal-wrapper" key={`pedal-${pedal.id}`}>
                 <section 
-                  className={`gig-pedal dynamic-pedal ${isOn ? 'gig-pedal-on' : ''}`} 
-                  aria-label={`${pedalName} controls`} 
-                  style={{ 
-                    backgroundColor: pedalColor,
-                    display: 'flex', 
-                    flexDirection: 'column', 
-                    alignItems: 'center', 
-                    padding: '20px 15px', 
-                    gap: '15px',
-                    boxShadow: isOn 
-                      ? `0 0 20px -5px ${pedalColor}, inset 0 2px 5px rgba(255,255,255,0.2)` // Glows in its own color when ON
-                      : `0 10px 20px -5px rgba(0,0,0,0.6), inset 0 2px 5px rgba(255,255,255,0.2)`
-                  }}
+                  className={`dynamic-pedal ${isOn ? 'is-on' : ''}`} 
+                  style={{ backgroundColor: pedalColor, '--pedal-glow': pedalColor }}
                 >
+                  <div className="pedal-rim" />
                   
                   <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', position: 'relative', zIndex: 2 }}>
-                    <span className="gig-pedal-brand" style={{ color: 'rgba(255,255,255,0.8)', textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}>{pedal.brand || 'ToneVault'}</span>
-                    
-                    {/* LED now glows in the pedal's specific color */}
-                    <span 
-                      className={`gig-pedal-led ${isOn ? 'is-on' : ''}`} 
-                      aria-hidden="true" 
-                      style={{
-                        backgroundColor: isOn ? '#fff' : 'rgba(0,0,0,0.4)',
-                        boxShadow: isOn 
-                          ? `0 0 10px 2px ${pedalColor}, inset 0 1px 2px rgba(0,0,0,0.5)` 
-                          : 'inset 0 1px 3px rgba(0,0,0,0.8)',
-                        border: '1px solid rgba(0,0,0,0.5)',
-                        width: '10px',
-                        height: '10px',
-                        borderRadius: '50%'
-                      }}
-                    />
+                    <span style={{ fontSize: '7px', color: 'rgba(255,255,255,0.6)', fontWeight: '900' }}>IN</span>
+                    <span style={{
+                      backgroundColor: isOn ? '#fff' : 'rgba(0,0,0,0.6)',
+                      boxShadow: isOn ? `0 0 10px 2px #fff, 0 0 4px ${pedalColor}` : 'inset 0 2px 3px rgba(0,0,0,0.9)',
+                      border: '1px solid rgba(0,0,0,0.8)', width: '8px', height: '8px', borderRadius: '50%'
+                    }} />
+                    <span style={{ fontSize: '7px', color: 'rgba(255,255,255,0.6)', fontWeight: '900' }}>OUT</span>
                   </div>
 
-                  <div style={{ textAlign: 'center', width: '100%', marginTop: '10px', position: 'relative', zIndex: 2 }}>
-                    <span className="gig-pedal-name" style={{ display: 'block', fontSize: '14px', fontWeight: '900', color: '#fff', textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}>{pedalName}</span>
-                    <span className="gig-pedal-type" style={{ display: 'block', fontSize: '10px', opacity: 0.8, marginTop: '4px', color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,0.5)', textTransform: 'uppercase' }}>{pedal.type || pedal.category?.name || 'Effect'}</span>
+                  <div style={{ textAlign: 'center', width: '100%', marginTop: '6px', position: 'relative', zIndex: 2 }}>
+                    <span style={{ display: 'block', fontSize: '8px', fontWeight: '800', color: 'rgba(255,255,255,0.8)' }}>{pedal.brand || 'ToneVault'}</span>
+                    <span style={{ display: 'block', fontSize: '9px', fontWeight: '900', color: '#fff', textShadow: '0 1px 3px rgba(0,0,0,0.8)', lineHeight: 1.1 }}>{pedalName}</span>
                   </div>
                   
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px 24px', margin: '20px 0', position: 'relative', zIndex: 2 }}>
-                    {knobControls.map((control) => {
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 12px', margin: '12px 0', position: 'relative', zIndex: 2 }}>
+                    {[
+                      { key: 'volume', label: 'Vol' },
+                      { key: 'gain', label: 'Gain' },
+                      { key: 'drive', label: 'Drive' },
+                      { key: 'tone', label: 'Tone' },
+                    ].map((control) => {
                       const rotation = (levels[control.key] / 100) * 270 - 135;
                       return (
                         <div className="custom-knob-wrapper" key={control.key}>
                           <div className="custom-knob">
                             <div className="custom-knob-pointer" style={{ transform: `translateX(-50%) rotate(${rotation}deg)` }} />
-                            <input
-                              type="range"
-                              min="0"
-                              max="100"
-                              className="custom-knob-input"
-                              value={levels[control.key]}
-                              aria-label={`${pedalName} ${control.label}`}
-                              onChange={(event) => updatePedalLevel(pedal.id, control.key, event.target.value)}
-                            />
+                            <input type="range" min="0" max="100" className="custom-knob-input" value={levels[control.key]} onChange={(event) => updatePedalLevel(pedal.id, control.key, event.target.value)} />
                           </div>
-                          <span className="custom-knob-label" style={{ color: 'rgba(255,255,255,0.9)', textShadow: '0 1px 1px rgba(0,0,0,0.5)' }}>{control.label}</span>
+                          <span className="custom-knob-label">{control.label}</span>
                         </div>
                       )
                     })}
                   </div>
 
-                  <button
-                    type="button"
-                    className="gig-footswitch-button"
-                    aria-label={`${pedalName}: ${isOn ? 'on' : 'off'}. Toggle effect`}
-                    aria-pressed={isOn}
-                    onClick={() => togglePedal(pedal.id)}
-                    style={{ 
-                      display: 'flex', 
-                      flexDirection: 'column', 
-                      alignItems: 'center', 
-                      gap: '12px',
-                      marginTop: 'auto', 
-                      marginBottom: '10px',
-                      background: 'transparent',
-                      border: 'none',
-                      cursor: 'pointer',
-                      position: 'relative', 
-                      zIndex: 2
-                    }}
-                  >
-                    <span className="gig-footswitch" aria-hidden="true" style={{
-                      width: '64px',
-                      height: '64px',
-                      borderRadius: '50%',
-                      background: 'radial-gradient(circle at 40% 30%, #fff, #d4d4d8 20%, #71717a 70%, #3f3f46)',
-                      boxShadow: isOn 
-                        ? '0 6px 12px rgba(0,0,0,0.8), inset 0 4px 8px rgba(255,255,255,0.9)' 
-                        : '0 12px 20px rgba(0,0,0,0.7), inset 0 -4px 8px rgba(0,0,0,0.5), inset 0 4px 8px rgba(255,255,255,0.8)',
-                      border: '1px solid rgba(0,0,0,0.2)',
-                      transform: isOn ? 'translateY(3px)' : 'translateY(0)',
-                      transition: 'all 0.1s ease'
+                  <button type="button" onClick={() => togglePedal(pedal.id)} style={{ 
+                    marginTop: 'auto', background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', position: 'relative', zIndex: 2
+                  }}>
+                    <span aria-hidden="true" style={{
+                      width: '36px', height: '36px', borderRadius: '50%',
+                      background: 'radial-gradient(circle at 40% 30%, #fff, #e4e4e7 20%, #71717a 70%, #27272a)',
+                      boxShadow: isOn ? '0 4px 8px rgba(0,0,0,0.9), inset 0 3px 6px rgba(255,255,255,1)' : '0 10px 15px rgba(0,0,0,0.9), inset 0 -3px 6px rgba(0,0,0,0.7), inset 0 3px 6px rgba(255,255,255,0.8)',
+                      border: '1px solid rgba(0,0,0,0.4)', transform: isOn ? 'translateY(2px)' : 'translateY(0)', transition: 'all 0.1s ease'
                     }}>
-                      <i style={{ display: 'block', width: '80%', height: '80%', margin: '10%', borderRadius: '50%', border: '1px solid rgba(0,0,0,0.1)' }} />
+                      <i style={{ display: 'block', width: '80%', height: '80%', margin: '10%', borderRadius: '50%', border: '1px solid rgba(0,0,0,0.15)' }} />
                     </span>
-                    <span className="gig-pedal-status" style={{ fontSize: '11px', fontWeight: '900', letterSpacing: '1.5px', color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}>
+                    <span style={{ fontSize: '8px', fontWeight: '900', letterSpacing: '1px', color: isOn ? '#fff' : '#a1a1aa', textShadow: '0 1px 2px rgba(0,0,0,0.9)' }}>
                       {isOn ? 'ON' : 'OFF'}
                     </span>
                   </button>
-
                 </section>
-                {index < board.pedals.length - 1 && <span className={`gig-patch-cable ${isOn ? 'is-active' : ''}`} aria-hidden="true" />}
               </div>
-            })}
-          </div>
-          : <EmptyState title="No pedals in this rig" message="Edit this pedalboard and add pedals to play it in Gig POV." />}
-      </main>
-
-      <footer className="gig-mode-footer"><span><i /> READY FOR LIVE PERFORMANCE</span><span>{board.pedals?.length || 0} PEDALS · EFFECTS ARE LOCAL TO THIS SESSION</span></footer>
+            )
+          })}
+        </div>
+      </div>
     </div>
   </div>
 }
